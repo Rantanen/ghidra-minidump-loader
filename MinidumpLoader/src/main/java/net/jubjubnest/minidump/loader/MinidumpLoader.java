@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.jubjubnest.minidump;
+package net.jubjubnest.minidump.loader;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -46,14 +46,14 @@ import ghidra.util.exception.NotEmptyException;
 import ghidra.util.task.TaskMonitor;
 import net.jubjubnest.minidump.contrib.opinion.PeLoader;
 import net.jubjubnest.minidump.contrib.pe.PortableExecutable.SectionLayout;
-import net.jubjubnest.minidump.parser.Directory;
-import net.jubjubnest.minidump.parser.Header;
-import net.jubjubnest.minidump.parser.LocationDescriptor;
-import net.jubjubnest.minidump.parser.Memory64List;
-import net.jubjubnest.minidump.parser.MemoryInfo;
-import net.jubjubnest.minidump.parser.MemoryInfoList;
-import net.jubjubnest.minidump.parser.Module;
-import net.jubjubnest.minidump.parser.ModuleList;
+import net.jubjubnest.minidump.loader.parser.Directory;
+import net.jubjubnest.minidump.loader.parser.Header;
+import net.jubjubnest.minidump.loader.parser.LocationDescriptor;
+import net.jubjubnest.minidump.loader.parser.Memory64List;
+import net.jubjubnest.minidump.loader.parser.MemoryInfo;
+import net.jubjubnest.minidump.loader.parser.MemoryInfoList;
+import net.jubjubnest.minidump.loader.parser.Module;
+import net.jubjubnest.minidump.loader.parser.ModuleList;
 
 /**
  * Loads Windows Minidump files into Ghidra

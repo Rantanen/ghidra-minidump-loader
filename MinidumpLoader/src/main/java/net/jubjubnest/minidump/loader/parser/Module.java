@@ -1,4 +1,4 @@
-package net.jubjubnest.minidump.parser;
+package net.jubjubnest.minidump.loader.parser;
 
 import java.io.File;
 import java.io.IOException;

@@ -1,4 +1,4 @@
-package net.jubjubnest.minidump;
+package net.jubjubnest.minidump.loader;
 
 import java.io.File;
 import java.io.IOException;
@@ -7,8 +7,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 import ghidra.app.util.bin.ByteProvider;
-import net.jubjubnest.minidump.parser.Memory64Descriptor;
-import net.jubjubnest.minidump.parser.Memory64List;
+import net.jubjubnest.minidump.loader.parser.Memory64Descriptor;
+import net.jubjubnest.minidump.loader.parser.Memory64List;
 
 public class MinidumpMemoryProvider implements ByteProvider {
 
