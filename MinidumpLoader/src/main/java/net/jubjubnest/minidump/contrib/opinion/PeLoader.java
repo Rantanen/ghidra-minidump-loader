@@ -108,12 +108,18 @@ public class PeLoader extends AbstractPeDebugLoader {
 	}
 
 	@Override
-	public void load(ByteProvider provider, LoadSpec loadSpec, List<Option> options,
+	protected void load(ByteProvider provider, LoadSpec loadSpec, List<Option> options,
+			Program program, TaskMonitor monitor, MessageLog log)
+			throws IOException, CancelledException {
+		this.loadPortableExecutable(provider, loadSpec, options, program, monitor, log);
+	}
+
+	public PortableExecutable loadPortableExecutable(ByteProvider provider, LoadSpec loadSpec, List<Option> options,
 			Program program, TaskMonitor monitor, MessageLog log)
 			throws IOException, CancelledException {
 
 		if (monitor.isCancelled()) {
-			return;
+			return null;
 		}
 
 		GenericFactory factory = MessageLogContinuesFactory.create(log);
@@ -122,7 +128,7 @@ public class PeLoader extends AbstractPeDebugLoader {
 
 		NTHeader ntHeader = pe.getNTHeader();
 		if (ntHeader == null) {
-			return;
+			return null;
 		}
 		OptionalHeader optionalHeader = ntHeader.getOptionalHeader();
 		FileHeader fileHeader = ntHeader.getFileHeader();
@@ -180,6 +186,8 @@ public class PeLoader extends AbstractPeDebugLoader {
 			throw new IOException(e);
 		}
 		monitor.setMessage("[" + program.getName() + "]: done!");
+		
+		return pe;
 	}
 
 	@Override
