@@ -315,7 +315,7 @@ public interface OptionalHeader extends StructConverter {
 	 */
 	public void writeHeader(RandomAccessFile raf, DataConverter dc) throws IOException;
 
-	public void validateDataDirectories(Program program);
+	public void validateDataDirectories(Program program, long imageOffset);
 
 	/**
 	 * @return true if the PE uses predominantly CLI code; otherwise, false.

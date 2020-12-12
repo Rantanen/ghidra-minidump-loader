@@ -97,8 +97,8 @@ public class CliTableField extends CliAbstractTable {
 	}
 
 	@Override
-	public void markup(Program program, boolean isBinary, TaskMonitor monitor, MessageLog log,
-			NTHeader ntHeader)
+	public void markup(Program program, long imageOffset, boolean isBinary, TaskMonitor monitor,
+			MessageLog log, NTHeader ntHeader)
 			throws DuplicateNameException, CodeUnitInsertionException, IOException {
 		for (CliAbstractTableRow row : rows) {
 			CliFieldRow fieldRow = (CliFieldRow) row;

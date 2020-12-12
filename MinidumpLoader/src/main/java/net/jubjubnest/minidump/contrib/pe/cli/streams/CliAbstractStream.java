@@ -88,8 +88,8 @@ public abstract class CliAbstractStream implements StructConverter, PeMarkupable
 	 * Subclass should first call this and then provide any custom markup they need. 
 	 */
 	@Override
-	public void markup(Program program, boolean isBinary, TaskMonitor monitor, MessageLog log,
-			NTHeader ntHeader) throws DuplicateNameException, IOException {
+	public void markup(Program program, long imageOffset, boolean isBinary, TaskMonitor monitor,
+			MessageLog log, NTHeader ntHeader) throws DuplicateNameException, IOException {
 
 		monitor.setMessage("[" + program.getName() + "]: CLI stream...");
 		Address addr = PeUtils.getMarkupAddress(program, isBinary, ntHeader, rva);

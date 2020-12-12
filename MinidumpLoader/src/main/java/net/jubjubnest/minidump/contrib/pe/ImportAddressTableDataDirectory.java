@@ -67,8 +67,8 @@ public class ImportAddressTableDataDirectory extends DataDirectory {
 	}
 
 	@Override
-	public void markup(Program program, boolean isBinary, TaskMonitor monitor, MessageLog log,
-			NTHeader ntHeader) throws CodeUnitInsertionException, MemoryAccessException {
+	public void markup(Program program, long imageOffset, boolean isBinary, TaskMonitor monitor,
+			MessageLog log, NTHeader ntHeader) throws CodeUnitInsertionException, MemoryAccessException {
 
 		monitor.setMessage(program.getName()+": IAT...");
 		Address addr = PeUtils.getMarkupAddress(program, isBinary, ntHeader, virtualAddress);

@@ -42,6 +42,11 @@ abstract class AbstractPeDebugLoader extends AbstractLibrarySupportLoader {
 	private HashMap<Address, StringBuffer> preCommentMap = new HashMap<>();
 	private HashMap<Address, StringBuffer> postCommentMap = new HashMap<>();
 	private HashMap<Address, StringBuffer> eolCommentMap = new HashMap<>();
+	protected long imageOffset;
+	
+	protected AbstractPeDebugLoader(long imageOffset) {
+		this.imageOffset = imageOffset;
+	}
 
 	protected void processComments(Listing listing, TaskMonitor monitor) {
 		List<HashMap<Address, StringBuffer>> maps = new ArrayList<>();
@@ -367,7 +372,7 @@ abstract class AbstractPeDebugLoader extends AbstractLibrarySupportLoader {
 				}
 				else {
 					addLineComment(
-						program.getImageBase().add(Conv.intToLong(lineNumber.getVirtualAddress())),
+						program.getImageBase().add(imageOffset).add(Conv.intToLong(lineNumber.getVirtualAddress())),
 						lineNumber.getLineNumber());
 				}
 			}
@@ -463,7 +468,7 @@ abstract class AbstractPeDebugLoader extends AbstractLibrarySupportLoader {
 		DebugDirectory dd = dm.getDebugDirectory();
 
 		if (dd.getAddressOfRawData() > 0) {
-			Address address = program.getImageBase().add(dd.getAddressOfRawData());
+			Address address = program.getImageBase().add(imageOffset).add(dd.getAddressOfRawData());
 			try {
 				program.getListing().createData(address, new StringDataType(), actualData.length());
 				program.getListing().setComment(address, CodeUnit.PLATE_COMMENT, "Debug Misc");

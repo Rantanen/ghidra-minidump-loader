@@ -163,8 +163,8 @@ public class CliTableMethodDef extends CliAbstractTable {
 	}
 
 	@Override
-	public void markup(Program program, boolean isBinary, TaskMonitor monitor, MessageLog log,
-			NTHeader ntHeader)
+	public void markup(Program program, long imageOffset, boolean isBinary, TaskMonitor monitor,
+			MessageLog log, NTHeader ntHeader)
 			throws DuplicateNameException, CodeUnitInsertionException, IOException {
 
 		int rvaZero = 0;

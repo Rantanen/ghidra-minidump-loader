@@ -61,8 +61,8 @@ public class ExceptionDataDirectory extends DataDirectory {
     }
 
 	@Override
-	public void markup(Program program, boolean isBinary, TaskMonitor monitor, MessageLog log,
-			NTHeader ntHeader) throws DuplicateNameException, CodeUnitInsertionException,
+	public void markup(Program program, long imageOffset, boolean isBinary, TaskMonitor monitor,
+			MessageLog log, NTHeader ntHeader) throws DuplicateNameException, CodeUnitInsertionException,
 			DataTypeConflictException, IOException {
 		monitor.setMessage(program.getName()+": exceptions...");
 		Address addr = PeUtils.getMarkupAddress(program, isBinary, ntHeader, virtualAddress);

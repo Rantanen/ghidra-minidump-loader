@@ -54,7 +54,7 @@ import ghidra.util.task.TaskMonitor;
 /**
  * Microsoft Portable Executable (PE) loader.
  */
-public class PeLoader2 extends AbstractPeDebugLoader {
+public class PeLoader extends AbstractPeDebugLoader {
 
 	/** The name of the PE loader */
 	public final static String PE_NAME = "Patched Portable Executable (PE)";
@@ -69,6 +69,18 @@ public class PeLoader2 extends AbstractPeDebugLoader {
 	public static final String PARSE_CLI_HEADERS_OPTION_NAME = "Parse CLI headers (if present)";
 	static final boolean PARSE_CLI_HEADERS_OPTION_DEFAULT = true;
 
+    private SectionLayout sectionLayout;
+
+    public PeLoader() {
+        super(0);
+        this.sectionLayout = SectionLayout.FILE;
+    }
+
+    public PeLoader(long imageOffset, SectionLayout sectionLayout) {
+    	super(imageOffset);
+        this.sectionLayout = sectionLayout;
+    }
+
 	@Override
 	public Collection<LoadSpec> findSupportedLoadSpecs(ByteProvider provider) throws IOException {
 		List<LoadSpec> loadSpecs = new ArrayList<>();
@@ -78,7 +90,7 @@ public class PeLoader2 extends AbstractPeDebugLoader {
 		}
 
 		PortableExecutable pe = PortableExecutable.createPortableExecutable(
-			RethrowContinuesFactory.INSTANCE, provider, SectionLayout.FILE, false, false);
+			RethrowContinuesFactory.INSTANCE, provider, this.sectionLayout, false, false);
 		NTHeader ntHeader = pe.getNTHeader();
 		if (ntHeader != null && ntHeader.getOptionalHeader() != null) {
 			long imageBase = ntHeader.getOptionalHeader().getImageBase();
@@ -96,7 +108,7 @@ public class PeLoader2 extends AbstractPeDebugLoader {
 	}
 
 	@Override
-	protected void load(ByteProvider provider, LoadSpec loadSpec, List<Option> options,
+	public void load(ByteProvider provider, LoadSpec loadSpec, List<Option> options,
 			Program program, TaskMonitor monitor, MessageLog log)
 			throws IOException, CancelledException {
 
@@ -106,7 +118,7 @@ public class PeLoader2 extends AbstractPeDebugLoader {
 
 		GenericFactory factory = MessageLogContinuesFactory.create(log);
 		PortableExecutable pe = PortableExecutable.createPortableExecutable(factory, provider,
-			SectionLayout.FILE, false, shouldParseCliHeaders(options));
+			this.sectionLayout, false, shouldParseCliHeaders(options));
 
 		NTHeader ntHeader = pe.getNTHeader();
 		if (ntHeader == null) {
@@ -124,7 +136,7 @@ public class PeLoader2 extends AbstractPeDebugLoader {
 			monitor.setCancelEnabled(false);
 			optionalHeader.processDataDirectories(monitor);
 			monitor.setCancelEnabled(true);
-			optionalHeader.validateDataDirectories(program);
+			optionalHeader.validateDataDirectories(program, this.imageOffset);
 
 			DataDirectory[] datadirs = optionalHeader.getDataDirectories();
 			layoutHeaders(program, pe, ntHeader, datadirs);
@@ -133,7 +145,7 @@ public class PeLoader2 extends AbstractPeDebugLoader {
 					continue;
 				}
 				if (datadir.hasParsedCorrectly()) {
-					datadir.markup(program, false, monitor, log, ntHeader);
+					datadir.markup(program, imageOffset, false, monitor, log, ntHeader);
 				}
 			}
 
@@ -219,26 +231,26 @@ public class PeLoader2 extends AbstractPeDebugLoader {
 			DataDirectory[] datadirs) {
 		try {
 			DataType dt = pe.getDOSHeader().toDataType();
-			Address start = program.getImageBase();
+			Address start = program.getImageBase().add(this.imageOffset);
 			DataUtilities.createData(program, start, dt, -1, false,
 				DataUtilities.ClearDataMode.CHECK_FOR_SPACE);
 
 			dt = pe.getRichHeader().toDataType();
 			if (dt != null) {
-				start = program.getImageBase().add(pe.getRichHeader().getOffset());
+				start = program.getImageBase().add(this.imageOffset).add(pe.getRichHeader().getOffset());
 				DataUtilities.createData(program, start, dt, -1, false,
 					DataUtilities.ClearDataMode.CHECK_FOR_SPACE);
 			}
 
 			dt = ntHeader.toDataType();
-			start = program.getImageBase().add(pe.getDOSHeader().e_lfanew());
+			start = program.getImageBase().add(this.imageOffset).add(pe.getDOSHeader().e_lfanew());
 			DataUtilities.createData(program, start, dt, -1, false,
 				DataUtilities.ClearDataMode.CHECK_FOR_SPACE);
 
 			FileHeader fh = ntHeader.getFileHeader();
 			SectionHeader[] sections = fh.getSectionHeaders();
 			int index = fh.getPointerToSections();
-			start = program.getImageBase().add(index);
+			start = program.getImageBase().add(this.imageOffset).add(index);
 			for (SectionHeader section : sections) {
 				dt = section.toDataType();
 				DataUtilities.createData(program, start, dt, -1, false,

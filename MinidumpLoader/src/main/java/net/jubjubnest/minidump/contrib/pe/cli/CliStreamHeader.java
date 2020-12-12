@@ -82,10 +82,10 @@ public class CliStreamHeader implements StructConverter, PeMarkupable {
 	}
 
 	@Override
-	public void markup(Program program, boolean isBinary, TaskMonitor monitor, MessageLog log,
-			NTHeader ntHeader) throws DuplicateNameException, IOException, MemoryAccessException {
+	public void markup(Program program, long imageOffset, boolean isBinary, TaskMonitor monitor,
+			MessageLog log, NTHeader ntHeader) throws DuplicateNameException, IOException, MemoryAccessException {
 		if (stream != null) {
-			stream.markup(program, isBinary, monitor, log, ntHeader);
+			stream.markup(program, imageOffset, isBinary, monitor, log, ntHeader);
 		}
 	}
 

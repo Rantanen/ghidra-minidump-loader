@@ -135,15 +135,15 @@ public class ImageCor20Header implements StructConverter, PeMarkupable {
 	}
 
 	@Override
-	public void markup(Program program, boolean isBinary, TaskMonitor monitor, MessageLog log,
-			NTHeader ntHeader) throws DuplicateNameException, CodeUnitInsertionException,
+	public void markup(Program program, long imageOffset, boolean isBinary, TaskMonitor monitor,
+			MessageLog log, NTHeader ntHeader) throws DuplicateNameException, CodeUnitInsertionException,
 			IOException, MemoryAccessException {
 
 		if (!metadata.hasParsedCorrectly()) {
 			return;
 		}
 
-		metadata.markup(program, isBinary, monitor, log, ntHeader);
+		metadata.markup(program, imageOffset, isBinary, monitor, log, ntHeader);
 
 		if (entryPointToken > 0) { // DLL's won't have an entry point
 			try {
@@ -151,7 +151,7 @@ public class ImageCor20Header implements StructConverter, PeMarkupable {
 					ImageCor20Flags.COMIMAGE_FLAGS_NATIVE_ENTRYPOINT) == ImageCor20Flags.COMIMAGE_FLAGS_NATIVE_ENTRYPOINT) {
 					// Add new symbol for the native entry point
 					program.getSymbolTable().addExternalEntryPoint(
-						program.getImageBase().add(entryPointToken));
+						program.getImageBase().add(imageOffset).add(entryPointToken));
 				}
 				else {
 					// Add a new symbol for the .NET entry point

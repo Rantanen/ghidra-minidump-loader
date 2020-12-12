@@ -422,9 +422,9 @@ public class CliStreamMetadata extends CliAbstractStream {
 	}
 
 	@Override
-	public void markup(Program program, boolean isBinary, TaskMonitor monitor, MessageLog log,
-			NTHeader ntHeader) throws DuplicateNameException, IOException {
-		super.markup(program, isBinary, monitor, log, ntHeader);
+	public void markup(Program program, long imageOffset, boolean isBinary, TaskMonitor monitor,
+			MessageLog log, NTHeader ntHeader) throws DuplicateNameException, IOException {
+		super.markup(program, imageOffset, isBinary, monitor, log, ntHeader);
 		for (CliAbstractTable table : tables) {
 			try {
 				Address addr = PeUtils.getMarkupAddress(program, isBinary, ntHeader,
@@ -432,7 +432,7 @@ public class CliStreamMetadata extends CliAbstractStream {
 				program.getBookmarkManager()
 						.setBookmark(addr, BookmarkType.INFO, "CLI Table", table.toString());
 
-				table.markup(program, isBinary, monitor, log, ntHeader);
+				table.markup(program, imageOffset, isBinary, monitor, log, ntHeader);
 			}
 			catch (Exception e) {
 				Msg.error(this, "Failed to markup " + table);

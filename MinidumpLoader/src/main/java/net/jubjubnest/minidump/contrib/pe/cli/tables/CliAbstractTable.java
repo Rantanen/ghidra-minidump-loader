@@ -118,8 +118,8 @@ public abstract class CliAbstractTable implements StructConverter, PeMarkupable 
 	}
 
 	@Override
-	public void markup(Program program, boolean isBinary, TaskMonitor monitor,
-			MessageLog log, NTHeader ntHeader) throws DuplicateNameException,
+	public void markup(Program program, long imageOffset, boolean isBinary,
+			TaskMonitor monitor, MessageLog log, NTHeader ntHeader) throws DuplicateNameException,
 			CodeUnitInsertionException, IOException, MemoryAccessException {
 		// Markup is not required
 	}

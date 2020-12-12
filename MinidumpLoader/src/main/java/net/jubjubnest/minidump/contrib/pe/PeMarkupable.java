@@ -33,6 +33,7 @@ public interface PeMarkupable {
 	 * Marks up a PE structure.
 	 * 
 	 * @param program The program to markup.
+	 * @param imageOffset PE image offset in memory from the program image base.
 	 * @param isBinary True if the program is binary; otherwise, false.
 	 * @param monitor The monitor.
 	 * @param log The log.
@@ -42,7 +43,7 @@ public interface PeMarkupable {
 	 * @throws IOException
 	 * @throws MemoryAccessException
 	 */
-	public void markup(Program program, boolean isBinary, TaskMonitor monitor, MessageLog log,
-			NTHeader ntHeader) throws DuplicateNameException, CodeUnitInsertionException,
+	public void markup(Program program, long imageOffset, boolean isBinary, TaskMonitor monitor,
+			MessageLog log, NTHeader ntHeader) throws DuplicateNameException, CodeUnitInsertionException,
 			IOException, MemoryAccessException;
 }

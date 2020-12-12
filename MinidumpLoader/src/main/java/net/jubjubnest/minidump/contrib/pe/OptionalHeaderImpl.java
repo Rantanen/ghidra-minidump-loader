@@ -731,10 +731,10 @@ public class OptionalHeaderImpl implements OptionalHeader {
 	}
 
 	@Override
-	public void validateDataDirectories(Program program) {
+	public void validateDataDirectories(Program program, long imageOffset) {
 		Memory memory = program.getMemory();
 		int sizeint = Integer.SIZE / 8;
-		Address addr = program.getImageBase().add(startOfDataDirs);
+		Address addr = program.getImageBase().add(imageOffset).add(startOfDataDirs);
 		for (int i = 0; i < numberOfRvaAndSizes; i++) {
 			try {
 				int virtualAddress = memory.getInt(addr, false);

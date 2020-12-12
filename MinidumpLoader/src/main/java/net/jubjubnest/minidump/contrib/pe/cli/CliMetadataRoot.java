@@ -153,10 +153,10 @@ public class CliMetadataRoot implements StructConverter, PeMarkupable {
 	}
 
 	@Override
-	public void markup(Program program, boolean isBinary, TaskMonitor monitor, MessageLog log,
-			NTHeader ntHeader) throws DuplicateNameException, CodeUnitInsertionException,
+	public void markup(Program program, long imageOffset, boolean isBinary, TaskMonitor monitor,
+			MessageLog log, NTHeader ntHeader) throws DuplicateNameException, CodeUnitInsertionException,
 			IOException, MemoryAccessException {
-		Address start = program.getImageBase().add(getRva());
+		Address start = program.getImageBase().add(imageOffset).add(getRva());
 		try {
 			program.getSymbolTable().createLabel(start, NAME, SourceType.ANALYSIS);
 		}
@@ -167,11 +167,11 @@ public class CliMetadataRoot implements StructConverter, PeMarkupable {
 		// Markup streams.  Must markup Metadata stream last.
 		for (CliStreamHeader header : streamHeaderMap.values()) {
 			if (header != metadataHeader) {
-				header.markup(program, isBinary, monitor, log, ntHeader);
+				header.markup(program, imageOffset, isBinary, monitor, log, ntHeader);
 			}
 		}
 		if (metadataHeader != null) {
-			metadataHeader.markup(program, isBinary, monitor, log, ntHeader);
+			metadataHeader.markup(program, imageOffset, isBinary, monitor, log, ntHeader);
 		}
 	}
 
