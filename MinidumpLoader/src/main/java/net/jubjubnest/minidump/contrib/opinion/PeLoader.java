@@ -662,14 +662,18 @@ public class PeLoader extends AbstractPeDebugLoader {
 				x = ((sections[i].getCharacteristics() &
 					SectionFlags.IMAGE_SCN_MEM_EXECUTE.getMask()) != 0x0);
 
-				int rawDataSize = sections[i].getSizeOfRawData();
-				int rawDataPtr = sections[i].getPointerToRawData();
+				int sourceDataSize = sectionLayout == SectionLayout.FILE
+						? sections[i].getSizeOfRawData()
+						: sections[i].getVirtualSize();
+				int sourceDataPtr = sectionLayout == SectionLayout.FILE
+						? sections[i].getPointerToRawData()
+						: sections[i].getVirtualAddress();
 				virtualSize = sections[i].getVirtualSize();
-				if (rawDataSize != 0 && rawDataPtr != 0) {
+				if (sourceDataSize != 0 && sourceDataPtr != 0) {
 					int dataSize =
-						((rawDataSize > virtualSize && virtualSize > 0) || rawDataSize < 0)
+						((sourceDataSize > virtualSize && virtualSize > 0) || sourceDataSize < 0)
 								? virtualSize
-								: rawDataSize;
+								: sourceDataSize;
 					if (ntHeader.checkRVA(dataSize) ||
 						(0 < dataSize && dataSize < pe.getFileLength())) {
 						if (!ntHeader.checkRVA(dataSize)) {
@@ -681,33 +685,33 @@ public class PeLoader extends AbstractPeDebugLoader {
 							sectionName = "SECTION." + i;
 						}
 						MemoryBlockUtils.createInitializedBlock(prog, false, sectionName, address,
-							fileBytes, rawDataPtr, dataSize, "", "", r, w, x, log);
+							fileBytes, sourceDataPtr, dataSize, "", "", r, w, x, log);
 						sectionToAddress.put(sections[i], address);
 					}
-					if (rawDataSize == virtualSize) {
+					if (sourceDataSize == virtualSize) {
 						continue;
 					}
-					else if (rawDataSize > virtualSize) {
+					else if (sourceDataSize > virtualSize) {
 						// virtual size fully initialized
 						continue;
 					}
 					// remainder of virtual size is uninitialized
-					if (rawDataSize < 0) {
+					if (sourceDataSize < 0) {
 						Msg.error(this,
 							"Section[" + i + "] has invalid size " +
-								Integer.toHexString(rawDataSize) + " (" +
+								Integer.toHexString(sourceDataSize) + " (" +
 								Integer.toHexString(virtualSize) + ")");
 						break;
 					}
-					virtualSize -= rawDataSize;
-					address = address.add(rawDataSize);
+					virtualSize -= sourceDataSize;
+					address = address.add(sourceDataSize);
 				}
 
 				if (virtualSize == 0) {
 					Msg.error(this, "Section[" + i + "] has size zero");
 				}
 				else {
-					int dataSize = (virtualSize > 0 || rawDataSize < 0) ? virtualSize : 0;
+					int dataSize = (virtualSize > 0 || sourceDataSize < 0) ? virtualSize : 0;
 					if (dataSize > 0) {
 						MemoryBlockUtils.createUninitializedBlock(prog, false,
 							sections[i].getReadableName(), address, dataSize, "", "", r, w, x, log);
