@@ -23,6 +23,7 @@ import ghidra.program.model.data.*;
 import ghidra.program.model.listing.Program;
 import ghidra.util.exception.DuplicateNameException;
 import ghidra.util.task.TaskMonitor;
+import net.jubjubnest.minidump.shared.ImageLoadInfo;
 
 public class DefaultDataDirectory extends DataDirectory {
 
@@ -55,7 +56,7 @@ public class DefaultDataDirectory extends DataDirectory {
 	}
 
 	@Override
-	public void markup(Program program, long imageOffset, boolean isBinary, TaskMonitor monitor,
+	public void markup(Program program, ImageLoadInfo loadInfo, boolean isBinary, TaskMonitor monitor,
 			MessageLog log, NTHeader ntHeader) {
 		//do nothing
 	}

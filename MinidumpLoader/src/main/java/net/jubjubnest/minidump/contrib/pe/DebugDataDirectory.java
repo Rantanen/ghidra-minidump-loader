@@ -22,6 +22,7 @@ import ghidra.app.util.bin.format.FactoryBundledWithBinaryReader;
 import ghidra.app.util.bin.format.pdb.PdbInfoDotNetIface;
 import ghidra.app.util.bin.format.pdb.PdbInfoIface;
 import net.jubjubnest.minidump.contrib.pe.debug.*;
+import net.jubjubnest.minidump.shared.ImageLoadInfo;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressSpace;
@@ -75,7 +76,7 @@ public class DebugDataDirectory extends DataDirectory {
     }
 
 	@Override
-	public void markup(Program program, long imageOffset, boolean isBinary, TaskMonitor monitor,
+	public void markup(Program program, ImageLoadInfo loadInfo, boolean isBinary, TaskMonitor monitor,
 			MessageLog log, NTHeader ntHeader) throws DuplicateNameException, CodeUnitInsertionException,
 			DataTypeConflictException, IOException {
 

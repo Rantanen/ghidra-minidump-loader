@@ -22,6 +22,7 @@ import ghidra.app.util.bin.format.pdb.*;
 import net.jubjubnest.minidump.contrib.pe.FileHeader;
 import net.jubjubnest.minidump.contrib.pe.SectionHeader;
 import net.jubjubnest.minidump.contrib.pe.debug.*;
+import net.jubjubnest.minidump.shared.ImageLoadInfo;
 import ghidra.app.util.datatype.microsoft.GUID;
 import ghidra.app.util.demangler.DemangledObject;
 import ghidra.app.util.demangler.DemanglerUtil;
@@ -42,10 +43,10 @@ abstract class AbstractPeDebugLoader extends AbstractLibrarySupportLoader {
 	private HashMap<Address, StringBuffer> preCommentMap = new HashMap<>();
 	private HashMap<Address, StringBuffer> postCommentMap = new HashMap<>();
 	private HashMap<Address, StringBuffer> eolCommentMap = new HashMap<>();
-	protected long imageOffset;
+	protected ImageLoadInfo loadInfo;
 	
-	protected AbstractPeDebugLoader(long imageOffset) {
-		this.imageOffset = imageOffset;
+	protected AbstractPeDebugLoader(ImageLoadInfo loadInfo) {
+		this.loadInfo = loadInfo;
 	}
 
 	protected void processComments(Listing listing, TaskMonitor monitor) {
@@ -372,7 +373,7 @@ abstract class AbstractPeDebugLoader extends AbstractLibrarySupportLoader {
 				}
 				else {
 					addLineComment(
-						program.getImageBase().add(imageOffset).add(Conv.intToLong(lineNumber.getVirtualAddress())),
+						program.getImageBase().add(loadInfo.imageBase).add(Conv.intToLong(lineNumber.getVirtualAddress())),
 						lineNumber.getLineNumber());
 				}
 			}
@@ -468,7 +469,7 @@ abstract class AbstractPeDebugLoader extends AbstractLibrarySupportLoader {
 		DebugDirectory dd = dm.getDebugDirectory();
 
 		if (dd.getAddressOfRawData() > 0) {
-			Address address = program.getImageBase().add(imageOffset).add(dd.getAddressOfRawData());
+			Address address = program.getImageBase().add(loadInfo.imageBase).add(dd.getAddressOfRawData());
 			try {
 				program.getListing().createData(address, new StringDataType(), actualData.length());
 				program.getListing().setComment(address, CodeUnit.PLATE_COMMENT, "Debug Misc");

@@ -20,6 +20,7 @@ import java.io.RandomAccessFile;
 
 import ghidra.app.util.bin.format.FactoryBundledWithBinaryReader;
 import net.jubjubnest.minidump.contrib.pe.ImageCor20Header.ImageCor20Flags;
+import net.jubjubnest.minidump.shared.ImageLoadInfo;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressOutOfBoundsException;
 import ghidra.program.model.data.*;
@@ -731,10 +732,10 @@ public class OptionalHeaderImpl implements OptionalHeader {
 	}
 
 	@Override
-	public void validateDataDirectories(Program program, long imageOffset) {
+	public void validateDataDirectories(Program program, ImageLoadInfo loadInfo) {
 		Memory memory = program.getMemory();
 		int sizeint = Integer.SIZE / 8;
-		Address addr = program.getImageBase().add(imageOffset).add(startOfDataDirs);
+		Address addr = program.getImageBase().add(loadInfo.imageBase).add(startOfDataDirs);
 		for (int i = 0; i < numberOfRvaAndSizes; i++) {
 			try {
 				int virtualAddress = memory.getInt(addr, false);

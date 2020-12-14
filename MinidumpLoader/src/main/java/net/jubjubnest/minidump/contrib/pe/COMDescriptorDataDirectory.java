@@ -26,6 +26,7 @@ import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.program.model.util.CodeUnitInsertionException;
 import ghidra.util.exception.DuplicateNameException;
 import ghidra.util.task.TaskMonitor;
+import net.jubjubnest.minidump.shared.ImageLoadInfo;
 
 /**
  * This value has been renamed to IMAGE_DIRECTORY_ENTRY_COMHEADER.
@@ -82,7 +83,7 @@ public class COMDescriptorDataDirectory extends DataDirectory {
 	}
 
 	@Override
-	public void markup(Program program, long imageOffset, boolean isBinary, TaskMonitor monitor,
+	public void markup(Program program, ImageLoadInfo loadInfo, boolean isBinary, TaskMonitor monitor,
 			MessageLog log, NTHeader ntHeader) throws DuplicateNameException, CodeUnitInsertionException,
 			IOException, MemoryAccessException {
 
@@ -96,7 +97,7 @@ public class COMDescriptorDataDirectory extends DataDirectory {
 		PeUtils.createData(program, addr, dt, log);
 
 		if (hasParsed) {
-			header.markup(program, imageOffset, isBinary, monitor, log, ntHeader);
+			header.markup(program, loadInfo, isBinary, monitor, log, ntHeader);
 		}
 	}
 

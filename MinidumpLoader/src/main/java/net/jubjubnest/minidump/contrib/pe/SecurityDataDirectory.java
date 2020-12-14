@@ -32,6 +32,7 @@ import ghidra.util.DataConverter;
 import ghidra.util.Msg;
 import ghidra.util.exception.DuplicateNameException;
 import ghidra.util.task.TaskMonitor;
+import net.jubjubnest.minidump.shared.ImageLoadInfo;
 
 // See https://docs.microsoft.com/en-us/windows/desktop/debug/pe-format
 
@@ -75,7 +76,7 @@ public class SecurityDataDirectory extends DataDirectory implements ByteArrayCon
 	}
 
 	@Override
-	public void markup(Program program, long imageOffset, boolean isBinary, TaskMonitor monitor,
+	public void markup(Program program, ImageLoadInfo loadInfo, boolean isBinary, TaskMonitor monitor,
 			MessageLog log, NTHeader ntHeader) throws DuplicateNameException, CodeUnitInsertionException,
 			DataTypeConflictException, IOException {
 

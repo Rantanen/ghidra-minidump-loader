@@ -29,6 +29,7 @@ import ghidra.program.model.util.CodeUnitInsertionException;
 import ghidra.util.*;
 import ghidra.util.exception.DuplicateNameException;
 import ghidra.util.task.TaskMonitor;
+import net.jubjubnest.minidump.shared.ImageLoadInfo;
 
 /**
  * Points to the imports (an array of IMAGE_IMPORT_DESCRIPTOR structures).
@@ -90,7 +91,7 @@ public class ImportDataDirectory extends DataDirectory {
 	}
 
 	@Override
-	public void markup(Program program, long imageOffset, boolean isBinary, TaskMonitor monitor,
+	public void markup(Program program, ImageLoadInfo loadInfo, boolean isBinary, TaskMonitor monitor,
 			MessageLog log, NTHeader ntHeader) throws DuplicateNameException, CodeUnitInsertionException,
 			DataTypeConflictException, IOException, MemoryAccessException {
 

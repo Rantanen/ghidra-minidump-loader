@@ -24,6 +24,7 @@ import ghidra.app.util.bin.StructConverter;
 import net.jubjubnest.minidump.contrib.pe.NTHeader;
 import net.jubjubnest.minidump.contrib.pe.PeMarkupable;
 import net.jubjubnest.minidump.contrib.pe.cli.streams.CliStreamMetadata;
+import net.jubjubnest.minidump.shared.ImageLoadInfo;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.program.model.data.*;
 import ghidra.program.model.listing.Program;
@@ -118,7 +119,7 @@ public abstract class CliAbstractTable implements StructConverter, PeMarkupable 
 	}
 
 	@Override
-	public void markup(Program program, long imageOffset, boolean isBinary,
+	public void markup(Program program, ImageLoadInfo loadInfo, boolean isBinary,
 			TaskMonitor monitor, MessageLog log, NTHeader ntHeader) throws DuplicateNameException,
 			CodeUnitInsertionException, IOException, MemoryAccessException {
 		// Markup is not required

@@ -22,6 +22,7 @@ import ghidra.app.util.bin.StructConverter;
 import ghidra.program.model.listing.Program;
 import ghidra.util.DataConverter;
 import ghidra.util.task.TaskMonitor;
+import net.jubjubnest.minidump.shared.ImageLoadInfo;
 
 public interface OptionalHeader extends StructConverter {
 	/**
@@ -315,7 +316,7 @@ public interface OptionalHeader extends StructConverter {
 	 */
 	public void writeHeader(RandomAccessFile raf, DataConverter dc) throws IOException;
 
-	public void validateDataDirectories(Program program, long imageOffset);
+	public void validateDataDirectories(Program program, ImageLoadInfo loadInfo);
 
 	/**
 	 * @return true if the PE uses predominantly CLI code; otherwise, false.

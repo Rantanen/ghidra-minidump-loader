@@ -29,6 +29,7 @@ import ghidra.program.model.util.CodeUnitInsertionException;
 import ghidra.util.DataConverter;
 import ghidra.util.exception.DuplicateNameException;
 import ghidra.util.task.TaskMonitor;
+import net.jubjubnest.minidump.shared.ImageLoadInfo;
 
 /**
  * Points to the base relocation information.
@@ -62,7 +63,7 @@ public class BaseRelocationDataDirectory extends DataDirectory implements ByteAr
 	}
 
 	@Override
-	public void markup(Program program, long imageOffset, boolean isBinary, TaskMonitor monitor,
+	public void markup(Program program, ImageLoadInfo loadInfo, boolean isBinary, TaskMonitor monitor,
 			MessageLog log, NTHeader ntHeader) throws CodeUnitInsertionException {
 
 		monitor.setMessage(program.getName()+": base relocation(s)...");

@@ -22,6 +22,7 @@ import net.jubjubnest.minidump.contrib.pe.NTHeader;
 import net.jubjubnest.minidump.contrib.pe.cli.blobs.*;
 import net.jubjubnest.minidump.contrib.pe.cli.streams.CliAbstractStream;
 import net.jubjubnest.minidump.contrib.pe.cli.streams.CliStreamMetadata;
+import net.jubjubnest.minidump.shared.ImageLoadInfo;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.CategoryPath;
@@ -85,7 +86,7 @@ public class CliTableStandAloneSig extends CliAbstractTable {
 	}
 
 	@Override
-	public void markup(Program program, long imageOffset, boolean isBinary, TaskMonitor monitor,
+	public void markup(Program program, ImageLoadInfo loadInfo, boolean isBinary, TaskMonitor monitor,
 			MessageLog log, NTHeader ntHeader)
 			throws DuplicateNameException, CodeUnitInsertionException, IOException {
 		for (CliAbstractTableRow row : rows) {

@@ -31,6 +31,7 @@ import net.jubjubnest.minidump.contrib.pe.*;
 import net.jubjubnest.minidump.contrib.pe.PortableExecutable.SectionLayout;
 import net.jubjubnest.minidump.contrib.pe.debug.DebugCOFFSymbol;
 import net.jubjubnest.minidump.contrib.pe.debug.DebugDirectoryParser;
+import net.jubjubnest.minidump.shared.ImageLoadInfo;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.app.util.importer.MessageLogContinuesFactory;
 import ghidra.framework.model.DomainObject;
@@ -72,12 +73,12 @@ public class PeLoader extends AbstractPeDebugLoader {
     private SectionLayout sectionLayout;
 
     public PeLoader() {
-        super(0);
+        super(new ImageLoadInfo());
         this.sectionLayout = SectionLayout.FILE;
     }
 
-    public PeLoader(long imageOffset, SectionLayout sectionLayout) {
-    	super(imageOffset);
+    public PeLoader(ImageLoadInfo loadInfo, SectionLayout sectionLayout) {
+    	super(loadInfo);
         this.sectionLayout = sectionLayout;
     }
 
@@ -106,15 +107,31 @@ public class PeLoader extends AbstractPeDebugLoader {
 
 		return loadSpecs;
 	}
+	
+	public class ImageInfo
+	{
+		public PeLoader loader;
+		public PortableExecutable pe;
+		public Map<SectionHeader, Address> sectionToAddress;
+	}
 
 	@Override
 	protected void load(ByteProvider provider, LoadSpec loadSpec, List<Option> options,
 			Program program, TaskMonitor monitor, MessageLog log)
 			throws IOException, CancelledException {
-		this.loadPortableExecutable(provider, loadSpec, options, program, monitor, log);
+		
+		if (loadInfo.imageName == null)
+			loadInfo.imageName = program.getName();
+
+		ImageInfo image = this.loadImage(provider, loadSpec, options, program, monitor, log);
+		if( image == null ) {
+			return;
+		}
+		
+		processImage(provider, image, options, program, monitor, log);
 	}
 
-	public PortableExecutable loadPortableExecutable(ByteProvider provider, LoadSpec loadSpec, List<Option> options,
+	public ImageInfo loadImage(ByteProvider provider, LoadSpec loadSpec, List<Option> options,
 			Program program, TaskMonitor monitor, MessageLog log)
 			throws IOException, CancelledException {
 
@@ -122,27 +139,55 @@ public class PeLoader extends AbstractPeDebugLoader {
 			return null;
 		}
 
+		ImageInfo imageInfo = new ImageInfo();
+		imageInfo.loader = this;
 		GenericFactory factory = MessageLogContinuesFactory.create(log);
-		PortableExecutable pe = PortableExecutable.createPortableExecutable(factory, provider,
+		imageInfo.pe = PortableExecutable.createPortableExecutable(factory, provider,
 			this.sectionLayout, false, shouldParseCliHeaders(options));
 
-		NTHeader ntHeader = pe.getNTHeader();
+		NTHeader ntHeader = imageInfo.pe.getNTHeader();
 		if (ntHeader == null) {
 			return null;
 		}
-		OptionalHeader optionalHeader = ntHeader.getOptionalHeader();
-		FileHeader fileHeader = ntHeader.getFileHeader();
 
 		monitor.setMessage("Completing PE header parsing...");
 		FileBytes fileBytes = MemoryBlockUtils.createFileBytes(program, provider, monitor);
 		try {
-			Map<SectionHeader, Address> sectionToAddress =
-				processMemoryBlocks(pe, program, fileBytes, monitor, log);
+			imageInfo.sectionToAddress =
+				processMemoryBlocks(imageInfo.pe, program, fileBytes, monitor, log);
+		}
+		catch (AddressOverflowException e) {
+			throw new IOException(e);
+		}
+		catch (DataTypeConflictException e) {
+			throw new IOException(e);
+		}
+		monitor.setMessage("[" + program.getName() + "]: loaded!");
+		
+		return imageInfo;
+	}
 
+	public void processImage(ByteProvider provider, ImageInfo imageInfo, List<Option> options,
+			Program program, TaskMonitor monitor, MessageLog log)
+			throws IOException {
+
+		if (monitor.isCancelled()) {
+			return;
+		}
+		
+		PortableExecutable pe = imageInfo.pe;
+		Map<SectionHeader, Address> sectionToAddress = imageInfo.sectionToAddress;
+
+		NTHeader ntHeader = pe.getNTHeader();
+		OptionalHeader optionalHeader = ntHeader.getOptionalHeader();
+		FileHeader fileHeader = ntHeader.getFileHeader();
+
+		monitor.setMessage("Completing PE header parsing...");
+		try {
 			monitor.setCancelEnabled(false);
 			optionalHeader.processDataDirectories(monitor);
 			monitor.setCancelEnabled(true);
-			optionalHeader.validateDataDirectories(program, this.imageOffset);
+			optionalHeader.validateDataDirectories(program, this.loadInfo);
 
 			DataDirectory[] datadirs = optionalHeader.getDataDirectories();
 			layoutHeaders(program, pe, ntHeader, datadirs);
@@ -151,7 +196,7 @@ public class PeLoader extends AbstractPeDebugLoader {
 					continue;
 				}
 				if (datadir.hasParsedCorrectly()) {
-					datadir.markup(program, imageOffset, false, monitor, log, ntHeader);
+					datadir.markup(program, loadInfo, false, monitor, log, ntHeader);
 				}
 			}
 
@@ -165,13 +210,10 @@ public class PeLoader extends AbstractPeDebugLoader {
 			processComments(program.getListing(), monitor);
 			processSymbols(fileHeader, sectionToAddress, program, monitor, log);
 
-			processEntryPoints(ntHeader, program, monitor);
+			// processEntryPoints(ntHeader, program, monitor);
 			String compiler = CompilerOpinion.getOpinion(pe, provider).toString();
 			program.setCompiler(compiler);
 
-		}
-		catch (AddressOverflowException e) {
-			throw new IOException(e);
 		}
 		catch (DuplicateNameException e) {
 			throw new IOException(e);
@@ -186,8 +228,6 @@ public class PeLoader extends AbstractPeDebugLoader {
 			throw new IOException(e);
 		}
 		monitor.setMessage("[" + program.getName() + "]: done!");
-		
-		return pe;
 	}
 
 	@Override
@@ -239,26 +279,26 @@ public class PeLoader extends AbstractPeDebugLoader {
 			DataDirectory[] datadirs) {
 		try {
 			DataType dt = pe.getDOSHeader().toDataType();
-			Address start = program.getImageBase().add(this.imageOffset);
+			Address start = program.getImageBase().add(loadInfo.imageBase);
 			DataUtilities.createData(program, start, dt, -1, false,
 				DataUtilities.ClearDataMode.CHECK_FOR_SPACE);
 
 			dt = pe.getRichHeader().toDataType();
 			if (dt != null) {
-				start = program.getImageBase().add(this.imageOffset).add(pe.getRichHeader().getOffset());
+				start = program.getImageBase().add(loadInfo.imageBase).add(pe.getRichHeader().getOffset());
 				DataUtilities.createData(program, start, dt, -1, false,
 					DataUtilities.ClearDataMode.CHECK_FOR_SPACE);
 			}
 
 			dt = ntHeader.toDataType();
-			start = program.getImageBase().add(this.imageOffset).add(pe.getDOSHeader().e_lfanew());
+			start = program.getImageBase().add(loadInfo.imageBase).add(pe.getDOSHeader().e_lfanew());
 			DataUtilities.createData(program, start, dt, -1, false,
 				DataUtilities.ClearDataMode.CHECK_FOR_SPACE);
 
 			FileHeader fh = ntHeader.getFileHeader();
 			SectionHeader[] sections = fh.getSectionHeaders();
 			int index = fh.getPointerToSections();
-			start = program.getImageBase().add(this.imageOffset).add(index);
+			start = program.getImageBase().add(loadInfo.imageBase).add(index);
 			for (SectionHeader section : sections) {
 				dt = section.toDataType();
 				DataUtilities.createData(program, start, dt, -1, false,
@@ -420,6 +460,7 @@ public class PeLoader extends AbstractPeDebugLoader {
 
 		Listing listing = program.getListing();
 		ReferenceManager refManager = program.getReferenceManager();
+		Memory memory = program.getMemory();
 
 		ImportInfo[] imports = idd.getImports();
 		for (ImportInfo importInfo : imports) {
@@ -453,8 +494,12 @@ public class PeLoader extends AbstractPeDebugLoader {
 //	            symTable.removeSymbol(symTable.getDynamicSymbol(extAddr));
 
 				try {
-					refManager.addExternalReference(address, importInfo.getDLL().toUpperCase(),
-						importInfo.getName(), extAddr, SourceType.IMPORTED, 0, RefType.DATA);
+					if( this.sectionLayout == SectionLayout.MEMORY && memory.contains( extAddr ) ) {
+						refManager.addMemoryReference(address, extAddr, RefType.DATA, SourceType.IMPORTED, 0);
+					} else {
+						refManager.addExternalReference(address, importInfo.getDLL().toUpperCase(),
+							importInfo.getName(), extAddr, SourceType.IMPORTED, 0, RefType.DATA);
+					}
 				}
 				catch (DuplicateNameException e) {
 					log.appendMsg("External location not created: " + e.getMessage());
@@ -551,14 +596,14 @@ public class PeLoader extends AbstractPeDebugLoader {
 
 			String name = export.getName();
 			try {
-				symTable.createLabel(address, name, SourceType.IMPORTED);
+				symTable.createLabel(address, loadInfo.prefixName(name), SourceType.IMPORTED);
 			}
 			catch (InvalidInputException e) {
 				// Don't create invalid symbol
 			}
 
 			try {
-				symTable.createLabel(address, SymbolUtilities.ORDINAL_PREFIX + export.getOrdinal(),
+				symTable.createLabel(address, loadInfo.prefixName(SymbolUtilities.ORDINAL_PREFIX + export.getOrdinal()),
 					SourceType.IMPORTED);
 			}
 			catch (InvalidInputException e) {

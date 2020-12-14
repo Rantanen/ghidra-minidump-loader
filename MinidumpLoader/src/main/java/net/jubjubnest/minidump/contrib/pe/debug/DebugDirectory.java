@@ -102,7 +102,7 @@ public class DebugDirectory implements StructConverter, ByteArrayConverter {
 		addressOfRawData = reader.readNextInt();
 		pointerToRawData = reader.readNextInt();
 
-		if (type < 0 || type > 16 || sizeOfData < 0) {
+		if (type < 0 || (type > 16 && type != 20) || sizeOfData < 0) {
 			Msg.error(this, "Invalid DebugDirectory");
 			sizeOfData = 0;
 			reader.setPointerIndex(oldIndex);
