@@ -22,6 +22,7 @@ import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.StructConverter;
 import ghidra.app.util.bin.format.FactoryBundledWithBinaryReader;
 import net.jubjubnest.minidump.contrib.pe.PortableExecutable.SectionLayout;
+import net.jubjubnest.minidump.shared.ImageLoadInfo;
 import ghidra.program.model.data.*;
 import ghidra.util.*;
 import ghidra.util.exception.DuplicateNameException;
@@ -57,7 +58,7 @@ public class NTHeader implements StructConverter, OffsetValidator {
 	private boolean advancedProcess = true;
 	private boolean parseCliHeaders = false;
 
-	private SectionLayout layout = SectionLayout.FILE;
+	private ImageLoadInfo loadInfo;
 
 	/**
 	 * Constructs a new NT header.
@@ -69,10 +70,10 @@ public class NTHeader implements StructConverter, OffsetValidator {
 	 * do not constitute an accurate NT header.
 	 */
 	public static NTHeader createNTHeader(FactoryBundledWithBinaryReader reader, int index,
-			SectionLayout layout, boolean advancedProcess, boolean parseCliHeaders)
+			ImageLoadInfo loadInfo, boolean advancedProcess, boolean parseCliHeaders)
 			throws InvalidNTHeaderException, IOException {
 		NTHeader ntHeader = (NTHeader) reader.getFactory().create(NTHeader.class);
-		ntHeader.initNTHeader(reader, index, layout, advancedProcess, parseCliHeaders);
+		ntHeader.initNTHeader(reader, index, loadInfo, advancedProcess, parseCliHeaders);
 		return ntHeader;
 	}
 
@@ -82,12 +83,12 @@ public class NTHeader implements StructConverter, OffsetValidator {
 	public NTHeader() {
 	}
 
-	private void initNTHeader(FactoryBundledWithBinaryReader reader, int index, SectionLayout layout,
+	private void initNTHeader(FactoryBundledWithBinaryReader reader, int index, ImageLoadInfo loadInfo,
 			boolean advancedProcess, boolean parseCliHeaders)
 			throws InvalidNTHeaderException, IOException {
 		this.reader = reader;
 		this.index = index;
-		this.layout = layout;
+		this.loadInfo = loadInfo;
 		this.advancedProcess = advancedProcess;
 		this.parseCliHeaders = parseCliHeaders;
 
@@ -103,7 +104,7 @@ public class NTHeader implements StructConverter, OffsetValidator {
 	}
 
 	public boolean isRVAResoltionSectionAligned() {
-		return layout == SectionLayout.MEMORY;
+		return loadInfo.sectionLayout == SectionLayout.MEMORY;
 	}
 
 	/**
@@ -157,7 +158,7 @@ public class NTHeader implements StructConverter, OffsetValidator {
 			long rawSize = section.getSizeOfRawData() & Conv.INT_MASK;
 			long rawPtr = section.getPointerToRawData() & Conv.INT_MASK;
 
-			switch (layout) {
+			switch (loadInfo.sectionLayout) {
 				case MEMORY:
 					return rva;
 				case FILE:
@@ -180,6 +181,14 @@ public class NTHeader implements StructConverter, OffsetValidator {
 		}
 		return -1;
 	}
+	
+	/**
+	 * Gets the load info used to load the file containing this header.
+	 * @return the load info
+	 */
+	public ImageLoadInfo getLoadInfo() {
+		return loadInfo;
+	}
 
 	@Override
 	public boolean checkPointer(long ptr) {
@@ -190,8 +199,8 @@ public class NTHeader implements StructConverter, OffsetValidator {
 			long rawSize = section.getSizeOfRawData() & Conv.INT_MASK;
 			long rawPtr = section.getPointerToRawData() & Conv.INT_MASK;
 
-			long sectionBasePtr = layout == SectionLayout.MEMORY ? virtPtr : rawPtr;
-			long sectionSize = layout == SectionLayout.MEMORY ? virtSize : rawSize;
+			long sectionBasePtr = loadInfo.sectionLayout == SectionLayout.MEMORY ? virtPtr : rawPtr;
+			long sectionSize = loadInfo.sectionLayout == SectionLayout.MEMORY ? virtSize : rawSize;
 
 			if (ptr >= sectionBasePtr && ptr <= sectionBasePtr + sectionSize) { // <= allows data after the last section, which is OK
 				return true;
@@ -272,7 +281,7 @@ public class NTHeader implements StructConverter, OffsetValidator {
 		fileHeader.processSymbols();
 
 		if (advancedProcess) {
-			optionalHeader.processDataDirectories(TaskMonitorAdapter.DUMMY_MONITOR);
+			optionalHeader.processDataDirectories(TaskMonitorAdapter.DUMMY_MONITOR, loadInfo);
 		}
 	}
 

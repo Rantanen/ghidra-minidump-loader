@@ -24,7 +24,6 @@ import ghidra.app.util.bin.StructConverter;
 import net.jubjubnest.minidump.contrib.pe.NTHeader;
 import net.jubjubnest.minidump.contrib.pe.PeMarkupable;
 import net.jubjubnest.minidump.contrib.pe.cli.streams.*;
-import net.jubjubnest.minidump.shared.ImageLoadInfo;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.*;
@@ -154,10 +153,10 @@ public class CliMetadataRoot implements StructConverter, PeMarkupable {
 	}
 
 	@Override
-	public void markup(Program program, ImageLoadInfo loadInfo, boolean isBinary, TaskMonitor monitor,
+	public void markup(Program program, boolean isBinary, TaskMonitor monitor,
 			MessageLog log, NTHeader ntHeader) throws DuplicateNameException, CodeUnitInsertionException,
 			IOException, MemoryAccessException {
-		Address start = program.getImageBase().add(loadInfo.imageBase).add(getRva());
+		Address start = program.getImageBase().add(ntHeader.getLoadInfo().imageBase).add(getRva());
 		try {
 			program.getSymbolTable().createLabel(start, NAME, SourceType.ANALYSIS);
 		}
@@ -168,11 +167,11 @@ public class CliMetadataRoot implements StructConverter, PeMarkupable {
 		// Markup streams.  Must markup Metadata stream last.
 		for (CliStreamHeader header : streamHeaderMap.values()) {
 			if (header != metadataHeader) {
-				header.markup(program, loadInfo, isBinary, monitor, log, ntHeader);
+				header.markup(program, isBinary, monitor, log, ntHeader);
 			}
 		}
 		if (metadataHeader != null) {
-			metadataHeader.markup(program, loadInfo, isBinary, monitor, log, ntHeader);
+			metadataHeader.markup(program, isBinary, monitor, log, ntHeader);
 		}
 	}
 

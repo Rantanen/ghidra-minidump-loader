@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 
 import ghidra.app.util.bin.format.FactoryBundledWithBinaryReader;
+import net.jubjubnest.minidump.contrib.new_.ModuleBaseOffset32DataType;
 import net.jubjubnest.minidump.contrib.pe.ImageCor20Header.ImageCor20Flags;
 import net.jubjubnest.minidump.shared.ImageLoadInfo;
 import ghidra.program.model.address.Address;
@@ -284,7 +285,7 @@ public class OptionalHeaderImpl implements OptionalHeader {
 	}
 
 	@Override
-	public void processDataDirectories(TaskMonitor monitor) throws IOException {
+	public void processDataDirectories(TaskMonitor monitor, ImageLoadInfo loadInfo) throws IOException {
 		monitor.setMessage("Parsing exports...");
 
 		dataDirectory = new DataDirectory[numberOfRvaAndSizes];
@@ -471,7 +472,7 @@ public class OptionalHeaderImpl implements OptionalHeader {
 		monitor.setMessage("Parsing delay imports...");
 		try {
 			dataDirectory[ndata] =
-				DelayImportDataDirectory.createDelayImportDataDirectory(ntHeader, reader);
+				DelayImportDataDirectory.createDelayImportDataDirectory(ntHeader, loadInfo, reader);
 		}
 		catch (RuntimeException re) {
 			if (PortableExecutable.DEBUG) {
@@ -612,8 +613,10 @@ public class OptionalHeaderImpl implements OptionalHeader {
 	 */
 	@Override
 	public DataType toDataType() throws DuplicateNameException {
+		DataType xbo32 = ntHeader.getLoadInfo().sharedProgram ? new ModuleBaseOffset32DataType() : IBO32;
+
 		StructureDataType ddstruct = new StructureDataType(DataDirectory.TITLE, 0);
-		ddstruct.add(IBO32, "VirtualAddress", null);
+		ddstruct.add(xbo32, "VirtualAddress", null);
 		ddstruct.add(DWORD, "Size", null);
 		ddstruct.setCategoryPath(new CategoryPath("/PE"));
 
@@ -625,14 +628,14 @@ public class OptionalHeaderImpl implements OptionalHeader {
 		struct.add(DWORD, "SizeOfCode", null);
 		struct.add(DWORD, "SizeOfInitializedData", null);
 		struct.add(DWORD, "SizeOfUninitializedData", null);
-		struct.add(IBO32, "AddressOfEntryPoint", null);
-		struct.add(IBO32, "BaseOfCode", null);
+		struct.add(xbo32, "AddressOfEntryPoint", null);
+		struct.add(xbo32, "BaseOfCode", null);
 		if (is64bit()) {
 			//BaseOfData does not exist in 64 bit
 			struct.add(new Pointer64DataType(), "ImageBase", null);
 		}
 		else {
-			struct.add(IBO32, "BaseOfData", null);
+			struct.add(xbo32, "BaseOfData", null);
 			struct.add(new Pointer32DataType(), "ImageBase", null);
 		}
 		struct.add(DWORD, "SectionAlignment", null);

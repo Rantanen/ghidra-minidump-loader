@@ -24,7 +24,6 @@ import net.jubjubnest.minidump.contrib.pe.NTHeader;
 import net.jubjubnest.minidump.contrib.pe.PeUtils;
 import net.jubjubnest.minidump.contrib.pe.cli.CliStreamHeader;
 import net.jubjubnest.minidump.contrib.pe.cli.tables.*;
-import net.jubjubnest.minidump.shared.ImageLoadInfo;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.*;
@@ -423,9 +422,9 @@ public class CliStreamMetadata extends CliAbstractStream {
 	}
 
 	@Override
-	public void markup(Program program, ImageLoadInfo loadInfo, boolean isBinary, TaskMonitor monitor,
-			MessageLog log, NTHeader ntHeader) throws DuplicateNameException, IOException {
-		super.markup(program, loadInfo, isBinary, monitor, log, ntHeader);
+	public void markup(Program program, boolean isBinary, TaskMonitor monitor, MessageLog log,
+			NTHeader ntHeader) throws DuplicateNameException, IOException {
+		super.markup(program, isBinary, monitor, log, ntHeader);
 		for (CliAbstractTable table : tables) {
 			try {
 				Address addr = PeUtils.getMarkupAddress(program, isBinary, ntHeader,
@@ -433,7 +432,7 @@ public class CliStreamMetadata extends CliAbstractStream {
 				program.getBookmarkManager()
 						.setBookmark(addr, BookmarkType.INFO, "CLI Table", table.toString());
 
-				table.markup(program, loadInfo, isBinary, monitor, log, ntHeader);
+				table.markup(program, isBinary, monitor, log, ntHeader);
 			}
 			catch (Exception e) {
 				Msg.error(this, "Failed to markup " + table);

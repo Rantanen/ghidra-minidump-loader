@@ -15,7 +15,9 @@
  */
 package net.jubjubnest.minidump.contrib.pe;
 
+import net.jubjubnest.minidump.contrib.new_.ModuleBaseOffset32DataType;
 import net.jubjubnest.minidump.contrib.pe.LoadConfigDirectory.GuardFlags;
+import net.jubjubnest.minidump.shared.ImageLoadInfo;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.program.model.address.*;
 import ghidra.program.model.data.DataType;
@@ -58,7 +60,7 @@ public class ControlFlowGuard {
 		// ControlFlowGuard
 		markupCfgCheckFunction(lcd, is64bit, space, mem, symbolTable);
 		markupCfgDispatchFunction(lcd, is64bit, space, mem, symbolTable);
-		markupCfgFunctionTable(lcd, program, log);
+		markupCfgFunctionTable(lcd, ntHeader.getLoadInfo().sharedProgram, program, log);
 		
 		// ReturnFlowGuard
 		markupRfgFailureRoutine(lcd, space, symbolTable);
@@ -126,10 +128,11 @@ public class ControlFlowGuard {
 	 * Performs markup on the ControlFlowGuard function table, if it exists.
 	 * 
 	 * @param lcd The PE LoadConfigDirectory.
+	 * @param loadInfo True if the Program is shared between multiple modules.
 	 * @param program The program.
 	 * @param log The log.
 	 */
-	private static void markupCfgFunctionTable(LoadConfigDirectory lcd, Program program,
+	private static void markupCfgFunctionTable(LoadConfigDirectory lcd, boolean sharedProgram, Program program,
 			MessageLog log) {
 
 		final int IMAGE_GUARD_CF_FUNCTION_TABLE_SIZE_MASK = 0xf0000000;
@@ -154,10 +157,12 @@ public class ControlFlowGuard {
 			GuardFlags guardFlags = lcd.getCfgGuardFlags();
 			int n = (guardFlags.getFlags() &
 				IMAGE_GUARD_CF_FUNCTION_TABLE_SIZE_MASK) >> IMAGE_GUARD_CF_FUNCTION_TABLE_SIZE_SHIFT;
-			DataType ibo32 = new ImageBaseOffset32DataType();
+			DataType xbo32 = sharedProgram
+					? new ModuleBaseOffset32DataType()
+					: new ImageBaseOffset32DataType();
 			for (long i = 0; i < functionCount; i++) {
-				Data d = PeUtils.createData(program, tableAddr.add(i * (ibo32.getLength() + n)),
-					ibo32, log);
+				Data d = PeUtils.createData(program, tableAddr.add(i * (xbo32.getLength() + n)),
+					xbo32, log);
 				if (d == null) {
 					// If we failed to create data on a table entry, just assume the rest will fail
 					break;

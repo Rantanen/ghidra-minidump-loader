@@ -22,7 +22,6 @@ import ghidra.app.util.bin.StructConverter;
 import net.jubjubnest.minidump.contrib.pe.NTHeader;
 import net.jubjubnest.minidump.contrib.pe.PeMarkupable;
 import net.jubjubnest.minidump.contrib.pe.cli.streams.CliAbstractStream;
-import net.jubjubnest.minidump.shared.ImageLoadInfo;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.program.model.data.*;
 import ghidra.program.model.listing.Program;
@@ -83,10 +82,10 @@ public class CliStreamHeader implements StructConverter, PeMarkupable {
 	}
 
 	@Override
-	public void markup(Program program, ImageLoadInfo loadInfo, boolean isBinary, TaskMonitor monitor,
+	public void markup(Program program, boolean isBinary, TaskMonitor monitor,
 			MessageLog log, NTHeader ntHeader) throws DuplicateNameException, IOException, MemoryAccessException {
 		if (stream != null) {
-			stream.markup(program, loadInfo, isBinary, monitor, log, ntHeader);
+			stream.markup(program, isBinary, monitor, log, ntHeader);
 		}
 	}
 

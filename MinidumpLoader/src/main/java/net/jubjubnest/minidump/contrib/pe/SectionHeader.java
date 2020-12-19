@@ -25,6 +25,8 @@ import ghidra.program.model.mem.*;
 import ghidra.util.Conv;
 import ghidra.util.DataConverter;
 import ghidra.util.exception.DuplicateNameException;
+import net.jubjubnest.minidump.contrib.new_.ModuleBaseOffset32DataType;
+import net.jubjubnest.minidump.shared.ImageLoadInfo;
 
 /**
  * A class to the represent the IMAGE_SECTION_HEADER
@@ -239,12 +241,13 @@ public class SectionHeader implements StructConverter, ByteArrayConverter {
 
 	private FactoryBundledWithBinaryReader reader;
 	private long index;
+	private ImageLoadInfo loadInfo;
 
-	static SectionHeader createSectionHeader(FactoryBundledWithBinaryReader reader, long index)
+	static SectionHeader createSectionHeader(FactoryBundledWithBinaryReader reader, ImageLoadInfo loadInfo, long index)
 			throws IOException {
 		SectionHeader sectionHeader =
 			(SectionHeader) reader.getFactory().create(SectionHeader.class);
-		sectionHeader.initSectionHeader(reader, index);
+		sectionHeader.initSectionHeader(reader, loadInfo, index);
 		return sectionHeader;
 	}
 
@@ -254,10 +257,11 @@ public class SectionHeader implements StructConverter, ByteArrayConverter {
 	public SectionHeader() {
 	}
 
-	private void initSectionHeader(FactoryBundledWithBinaryReader reader, long index)
+	private void initSectionHeader(FactoryBundledWithBinaryReader reader, ImageLoadInfo loadInfo, long index)
 			throws IOException {
 		this.reader = reader;
 		this.index = index;
+		this.loadInfo = loadInfo;
 
 		parse();
 	}
@@ -513,6 +517,8 @@ public class SectionHeader implements StructConverter, ByteArrayConverter {
 
 	@Override
 	public DataType toDataType() throws DuplicateNameException {
+		DataType xbo32 = loadInfo.sharedProgram ? new ModuleBaseOffset32DataType() : IBO32;
+
 		UnionDataType union = new UnionDataType("Misc");
 		union.add(DWORD, "PhysicalAddress", null);
 		union.add(DWORD, "VirtualSize", null);
@@ -521,7 +527,7 @@ public class SectionHeader implements StructConverter, ByteArrayConverter {
 		StructureDataType struct = new StructureDataType(NAME, 0);
 		struct.add(new ArrayDataType(ASCII, 8, 1), "Name", null);
 		struct.add(union, "Misc", null);
-		struct.add(IBO32, "VirtualAddress", null);
+		struct.add(xbo32, "VirtualAddress", null);
 		struct.add(DWORD, "SizeOfRawData", null);
 		struct.add(DWORD, "PointerToRawData", null);
 		struct.add(DWORD, "PointerToRelocations", null);

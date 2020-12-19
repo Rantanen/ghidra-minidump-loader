@@ -19,7 +19,6 @@ import java.io.IOException;
 
 import ghidra.app.util.bin.format.FactoryBundledWithBinaryReader;
 import net.jubjubnest.minidump.contrib.pe.*;
-import net.jubjubnest.minidump.shared.ImageLoadInfo;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.*;
@@ -91,7 +90,7 @@ public class CliMetadataDirectory extends DataDirectory {
 	}
 
 	@Override
-	public void markup(Program program, ImageLoadInfo loadInfo, boolean isBinary, TaskMonitor monitor,
+	public void markup(Program program, boolean isBinary, TaskMonitor monitor,
 			MessageLog log, NTHeader ntHeader) throws DuplicateNameException, CodeUnitInsertionException,
 			IOException, MemoryAccessException {
 
@@ -116,7 +115,7 @@ public class CliMetadataDirectory extends DataDirectory {
 		PeUtils.createData(program, addr, dt, log);
 
 		// Markup metadata header
-		metadataRoot.markup(program, loadInfo, isBinary, monitor, log, ntHeader);
+		metadataRoot.markup(program, isBinary, monitor, log, ntHeader);
 	}
 
 	@Override

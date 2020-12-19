@@ -63,7 +63,7 @@ public class BaseRelocationDataDirectory extends DataDirectory implements ByteAr
 	}
 
 	@Override
-	public void markup(Program program, ImageLoadInfo loadInfo, boolean isBinary, TaskMonitor monitor,
+	public void markup(Program program, boolean isBinary, TaskMonitor monitor,
 			MessageLog log, NTHeader ntHeader) throws CodeUnitInsertionException {
 
 		monitor.setMessage(program.getName()+": base relocation(s)...");

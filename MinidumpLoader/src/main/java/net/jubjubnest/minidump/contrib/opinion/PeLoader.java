@@ -70,16 +70,12 @@ public class PeLoader extends AbstractPeDebugLoader {
 	public static final String PARSE_CLI_HEADERS_OPTION_NAME = "Parse CLI headers (if present)";
 	static final boolean PARSE_CLI_HEADERS_OPTION_DEFAULT = true;
 
-    private SectionLayout sectionLayout;
-
     public PeLoader() {
         super(new ImageLoadInfo());
-        this.sectionLayout = SectionLayout.FILE;
     }
 
-    public PeLoader(ImageLoadInfo loadInfo, SectionLayout sectionLayout) {
+    public PeLoader(ImageLoadInfo loadInfo) {
     	super(loadInfo);
-        this.sectionLayout = sectionLayout;
     }
 
 	@Override
@@ -91,7 +87,7 @@ public class PeLoader extends AbstractPeDebugLoader {
 		}
 
 		PortableExecutable pe = PortableExecutable.createPortableExecutable(
-			RethrowContinuesFactory.INSTANCE, provider, this.sectionLayout, false, false);
+			RethrowContinuesFactory.INSTANCE, provider, this.loadInfo, false, false);
 		NTHeader ntHeader = pe.getNTHeader();
 		if (ntHeader != null && ntHeader.getOptionalHeader() != null) {
 			long imageBase = ntHeader.getOptionalHeader().getImageBase();
@@ -143,7 +139,7 @@ public class PeLoader extends AbstractPeDebugLoader {
 		imageInfo.loader = this;
 		GenericFactory factory = MessageLogContinuesFactory.create(log);
 		imageInfo.pe = PortableExecutable.createPortableExecutable(factory, provider,
-			this.sectionLayout, false, shouldParseCliHeaders(options));
+			this.loadInfo, false, shouldParseCliHeaders(options));
 
 		NTHeader ntHeader = imageInfo.pe.getNTHeader();
 		if (ntHeader == null) {
@@ -185,9 +181,9 @@ public class PeLoader extends AbstractPeDebugLoader {
 		monitor.setMessage("Completing PE header parsing...");
 		try {
 			monitor.setCancelEnabled(false);
-			optionalHeader.processDataDirectories(monitor);
+			optionalHeader.processDataDirectories(monitor, loadInfo);
 			monitor.setCancelEnabled(true);
-			optionalHeader.validateDataDirectories(program, this.loadInfo);
+			optionalHeader.validateDataDirectories(program, loadInfo);
 
 			DataDirectory[] datadirs = optionalHeader.getDataDirectories();
 			layoutHeaders(program, pe, ntHeader, datadirs);
@@ -196,7 +192,7 @@ public class PeLoader extends AbstractPeDebugLoader {
 					continue;
 				}
 				if (datadir.hasParsedCorrectly()) {
-					datadir.markup(program, loadInfo, false, monitor, log, ntHeader);
+					datadir.markup(program, false, monitor, log, ntHeader);
 				}
 			}
 
@@ -494,7 +490,7 @@ public class PeLoader extends AbstractPeDebugLoader {
 //	            symTable.removeSymbol(symTable.getDynamicSymbol(extAddr));
 
 				try {
-					if( this.sectionLayout == SectionLayout.MEMORY && memory.contains( extAddr ) ) {
+					if( this.loadInfo.sectionLayout == SectionLayout.MEMORY && memory.contains( extAddr ) ) {
 						refManager.addMemoryReference(address, extAddr, RefType.DATA, SourceType.IMPORTED, 0);
 					} else {
 						refManager.addExternalReference(address, importInfo.getDLL().toUpperCase(),
@@ -707,10 +703,10 @@ public class PeLoader extends AbstractPeDebugLoader {
 				x = ((sections[i].getCharacteristics() &
 					SectionFlags.IMAGE_SCN_MEM_EXECUTE.getMask()) != 0x0);
 
-				int sourceDataSize = sectionLayout == SectionLayout.FILE
+				int sourceDataSize = loadInfo.sectionLayout == SectionLayout.FILE
 						? sections[i].getSizeOfRawData()
 						: sections[i].getVirtualSize();
-				int sourceDataPtr = sectionLayout == SectionLayout.FILE
+				int sourceDataPtr = loadInfo.sectionLayout == SectionLayout.FILE
 						? sections[i].getPointerToRawData()
 						: sections[i].getVirtualAddress();
 				virtualSize = sections[i].getVirtualSize();

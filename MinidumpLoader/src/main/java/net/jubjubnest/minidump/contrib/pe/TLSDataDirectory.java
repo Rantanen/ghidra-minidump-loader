@@ -69,7 +69,7 @@ public class TLSDataDirectory extends DataDirectory {
 	}
 
 	@Override
-	public void markup(Program program, ImageLoadInfo loadInfo, boolean isBinary, TaskMonitor monitor,
+	public void markup(Program program, boolean isBinary, TaskMonitor monitor,
 			MessageLog log, NTHeader ntHeader) throws DuplicateNameException, CodeUnitInsertionException,
 			DataTypeConflictException, IOException {
 

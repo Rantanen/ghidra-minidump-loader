@@ -56,7 +56,7 @@ public class DefaultDataDirectory extends DataDirectory {
 	}
 
 	@Override
-	public void markup(Program program, ImageLoadInfo loadInfo, boolean isBinary, TaskMonitor monitor,
+	public void markup(Program program, boolean isBinary, TaskMonitor monitor,
 			MessageLog log, NTHeader ntHeader) {
 		//do nothing
 	}

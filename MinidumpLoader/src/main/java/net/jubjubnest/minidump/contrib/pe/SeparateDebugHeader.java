@@ -19,6 +19,7 @@ import generic.continues.GenericFactory;
 import ghidra.app.util.bin.ByteProvider;
 import ghidra.app.util.bin.format.FactoryBundledWithBinaryReader;
 import net.jubjubnest.minidump.contrib.pe.debug.DebugDirectoryParser;
+import net.jubjubnest.minidump.shared.ImageLoadInfo;
 import ghidra.util.Conv;
 import ghidra.util.Msg;
 
@@ -80,7 +81,7 @@ public class SeparateDebugHeader implements OffsetValidator {
 	 * @param bp the byte provider
 	 * @throws IOException if an I/O error occurs.
 	 */
-	public SeparateDebugHeader(GenericFactory factory, ByteProvider bp) throws IOException {
+	public SeparateDebugHeader(ImageLoadInfo loadInfo, GenericFactory factory, ByteProvider bp) throws IOException {
 		FactoryBundledWithBinaryReader reader =
 			new FactoryBundledWithBinaryReader(factory, bp, true);
 
@@ -114,7 +115,7 @@ public class SeparateDebugHeader implements OffsetValidator {
 
 		sections = new SectionHeader[numberOfSections];
 		for (int i = 0; i < numberOfSections; ++i) {
-			sections[i] = SectionHeader.createSectionHeader(reader, ptr);
+			sections[i] = SectionHeader.createSectionHeader(reader, loadInfo, ptr);
 			ptr += SectionHeader.IMAGE_SIZEOF_SECTION_HEADER;
 		}
 

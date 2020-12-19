@@ -21,7 +21,6 @@ import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.StructConverter;
 import net.jubjubnest.minidump.contrib.pe.*;
 import net.jubjubnest.minidump.contrib.pe.cli.CliStreamHeader;
-import net.jubjubnest.minidump.shared.ImageLoadInfo;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.CategoryPath;
@@ -89,8 +88,8 @@ public abstract class CliAbstractStream implements StructConverter, PeMarkupable
 	 * Subclass should first call this and then provide any custom markup they need. 
 	 */
 	@Override
-	public void markup(Program program, ImageLoadInfo loadInfo, boolean isBinary, TaskMonitor monitor,
-			MessageLog log, NTHeader ntHeader) throws DuplicateNameException, IOException {
+	public void markup(Program program, boolean isBinary, TaskMonitor monitor, MessageLog log,
+			NTHeader ntHeader) throws DuplicateNameException, IOException {
 
 		monitor.setMessage("[" + program.getName() + "]: CLI stream...");
 		Address addr = PeUtils.getMarkupAddress(program, isBinary, ntHeader, rva);

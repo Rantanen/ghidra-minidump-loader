@@ -83,7 +83,7 @@ public class COMDescriptorDataDirectory extends DataDirectory {
 	}
 
 	@Override
-	public void markup(Program program, ImageLoadInfo loadInfo, boolean isBinary, TaskMonitor monitor,
+	public void markup(Program program, boolean isBinary, TaskMonitor monitor,
 			MessageLog log, NTHeader ntHeader) throws DuplicateNameException, CodeUnitInsertionException,
 			IOException, MemoryAccessException {
 
@@ -97,7 +97,7 @@ public class COMDescriptorDataDirectory extends DataDirectory {
 		PeUtils.createData(program, addr, dt, log);
 
 		if (hasParsed) {
-			header.markup(program, loadInfo, isBinary, monitor, log, ntHeader);
+			header.markup(program, isBinary, monitor, log, ntHeader);
 		}
 	}
 

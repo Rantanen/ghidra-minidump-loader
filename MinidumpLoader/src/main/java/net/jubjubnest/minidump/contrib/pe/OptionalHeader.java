@@ -288,7 +288,7 @@ public interface OptionalHeader extends StructConverter {
 	/**
 	 * This methods tells this optional header to process its data directories.
 	 */
-	public void processDataDirectories(TaskMonitor monitor) throws IOException;
+	public void processDataDirectories(TaskMonitor monitor, ImageLoadInfo loadInfo) throws IOException;
 
 	/**
 	 * Returns the array of data directories.

@@ -43,7 +43,7 @@ public class DelayImportDataDirectory extends DataDirectory {
     private DelayImportDescriptor [] descriptors; 
 
     static DelayImportDataDirectory createDelayImportDataDirectory(
-            NTHeader ntHeader, FactoryBundledWithBinaryReader reader)
+            NTHeader ntHeader, ImageLoadInfo loadInfo, FactoryBundledWithBinaryReader reader)
             throws IOException {
         DelayImportDataDirectory delayImportDataDirectory = (DelayImportDataDirectory) reader.getFactory().create(DelayImportDataDirectory.class);
         delayImportDataDirectory.initDelayImportDataDirectory(ntHeader, reader);
@@ -98,7 +98,7 @@ public class DelayImportDataDirectory extends DataDirectory {
     }
 
     @Override
-	public void markup(Program program, ImageLoadInfo loadInfo, boolean isBinary, TaskMonitor monitor,
+	public void markup(Program program, boolean isBinary, TaskMonitor monitor,
 			MessageLog log, NTHeader ntHeader) throws DuplicateNameException, CodeUnitInsertionException,
 			DataTypeConflictException, IOException {
 

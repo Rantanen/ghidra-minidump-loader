@@ -29,7 +29,6 @@ import ghidra.program.model.util.CodeUnitInsertionException;
 import ghidra.util.Msg;
 import ghidra.util.exception.DuplicateNameException;
 import ghidra.util.task.TaskMonitor;
-import net.jubjubnest.minidump.shared.ImageLoadInfo;
 
 public class ImportAddressTableDataDirectory extends DataDirectory {
     private final static String NAME = "IMAGE_DIRECTORY_ENTRY_IAT";
@@ -68,7 +67,7 @@ public class ImportAddressTableDataDirectory extends DataDirectory {
 	}
 
 	@Override
-	public void markup(Program program, ImageLoadInfo loadInfo, boolean isBinary, TaskMonitor monitor,
+	public void markup(Program program, boolean isBinary, TaskMonitor monitor,
 			MessageLog log, NTHeader ntHeader) throws CodeUnitInsertionException, MemoryAccessException {
 
 		monitor.setMessage(program.getName()+": IAT...");

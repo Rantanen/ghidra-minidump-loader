@@ -56,7 +56,7 @@ public class ArchitectureDataDirectory extends DataDirectory {
 	}
 
 	@Override
-	public void markup(Program program, ImageLoadInfo loadInfo, boolean isBinary, TaskMonitor monitor,
+	public void markup(Program program, boolean isBinary, TaskMonitor monitor,
 			MessageLog log, NTHeader ntHeader) throws DuplicateNameException, CodeUnitInsertionException {
 		monitor.setMessage(program.getName()+": architecture...");
 		Address addr = PeUtils.getMarkupAddress(program, isBinary, ntHeader, virtualAddress);

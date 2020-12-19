@@ -25,6 +25,8 @@ import ghidra.program.model.data.*;
 import ghidra.util.Conv;
 import ghidra.util.Msg;
 import ghidra.util.exception.DuplicateNameException;
+import net.jubjubnest.minidump.contrib.new_.ModuleBaseOffset32DataType;
+import net.jubjubnest.minidump.shared.ImageLoadInfo;
 
 /**
  * A class to represent the 
@@ -67,6 +69,7 @@ public class DelayImportDescriptor implements StructConverter {
 	private List<DelayImportInfo> delayImportInfoList = new ArrayList<DelayImportInfo>();
 	private Map<ThunkData, ImportByName> importByNameMap = new HashMap<ThunkData, ImportByName>();
 	
+	private boolean sharedProgram;
 	private boolean isValid;
 
 	static DelayImportDescriptor createDelayImportDescriptor(NTHeader ntHeader,
@@ -86,6 +89,7 @@ public class DelayImportDescriptor implements StructConverter {
 	private void initDelayImportDescriptor(NTHeader ntHeader,
 			FactoryBundledWithBinaryReader reader, int index) throws IOException {
 		
+		sharedProgram = ntHeader.getLoadInfo().sharedProgram;
         if (!ntHeader.checkPointer(index)) {
 			Msg.error(this, "Invalid file index for " + Integer.toHexString(index));
 			return;
@@ -313,7 +317,9 @@ public class DelayImportDescriptor implements StructConverter {
 	}
 
 	public DataType toDataType() throws DuplicateNameException, IOException {
-		DataType ibo32 = new ImageBaseOffset32DataType();
+		DataType ibo32 = sharedProgram
+				? new ModuleBaseOffset32DataType()
+				: new ImageBaseOffset32DataType();
 		StructureDataType struct = new StructureDataType(NAME, 0);
 		struct.add(DWORD, "grAttrs", null);
 		struct.add(ibo32, "szName", null);

@@ -25,6 +25,7 @@ import ghidra.app.util.bin.format.mz.DOSHeader;
 import ghidra.util.DataConverter;
 import ghidra.util.Msg;
 import ghidra.util.exception.NotYetImplementedException;
+import net.jubjubnest.minidump.shared.ImageLoadInfo;
 
 /**
  * A class to manage loading Portable Executables (PE).
@@ -65,8 +66,8 @@ public class PortableExecutable {
 	 * @see #createPortableExecutable(GenericFactory, ByteProvider, SectionLayout, boolean, boolean)
 	 **/
 	public static PortableExecutable createPortableExecutable(GenericFactory factory,
-			ByteProvider bp, SectionLayout layout) throws IOException {
-		return createPortableExecutable(factory, bp, layout, true, false);
+			ByteProvider bp, ImageLoadInfo loadInfo) throws IOException {
+		return createPortableExecutable(factory, bp, loadInfo, true, false);
 	}
 
 	/**
@@ -79,11 +80,11 @@ public class PortableExecutable {
 	 * @throws IOException if an I/O error occurs.
 	 */
 	public static PortableExecutable createPortableExecutable(GenericFactory factory,
-			ByteProvider bp, SectionLayout layout, boolean advancedProcess, boolean parseCliHeaders)
+			ByteProvider bp, ImageLoadInfo loadInfo, boolean advancedProcess, boolean parseCliHeaders)
 			throws IOException {
 		PortableExecutable portableExecutable =
 			(PortableExecutable) factory.create(PortableExecutable.class);
-		portableExecutable.initPortableExecutable(factory, bp, layout, advancedProcess,
+		portableExecutable.initPortableExecutable(factory, bp, loadInfo, advancedProcess,
 			parseCliHeaders);
 		return portableExecutable;
 	}
@@ -95,7 +96,7 @@ public class PortableExecutable {
 	}
 
 	private void initPortableExecutable(GenericFactory factory, ByteProvider bp,
-			SectionLayout layout, boolean advancedProcess, boolean parseCliHeaders)
+			ImageLoadInfo loadInfo, boolean advancedProcess, boolean parseCliHeaders)
 			throws IOException {
 		reader = new FactoryBundledWithBinaryReader(factory, bp, true);
 
@@ -107,7 +108,7 @@ public class PortableExecutable {
 			}
 
 			try {
-				ntHeader = NTHeader.createNTHeader(reader, dosHeader.e_lfanew(), layout,
+				ntHeader = NTHeader.createNTHeader(reader, dosHeader.e_lfanew(), loadInfo,
 					advancedProcess, parseCliHeaders);
 			}
 			catch (InvalidNTHeaderException e) {

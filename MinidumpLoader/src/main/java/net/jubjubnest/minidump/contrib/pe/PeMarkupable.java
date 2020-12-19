@@ -23,7 +23,6 @@ import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.program.model.util.CodeUnitInsertionException;
 import ghidra.util.exception.DuplicateNameException;
 import ghidra.util.task.TaskMonitor;
-import net.jubjubnest.minidump.shared.ImageLoadInfo;
 
 /**
  * Common interface for standardizing the markup of a PE structure.
@@ -34,7 +33,6 @@ public interface PeMarkupable {
 	 * Marks up a PE structure.
 	 * 
 	 * @param program The program to markup.
-	 * @param loadInfo PE image offset in memory from the program image base.
 	 * @param isBinary True if the program is binary; otherwise, false.
 	 * @param monitor The monitor.
 	 * @param log The log.
@@ -44,7 +42,7 @@ public interface PeMarkupable {
 	 * @throws IOException
 	 * @throws MemoryAccessException
 	 */
-	public void markup(Program program, ImageLoadInfo loadInfo, boolean isBinary, TaskMonitor monitor,
-			MessageLog log, NTHeader ntHeader) throws DuplicateNameException, CodeUnitInsertionException,
+	public void markup(Program program, boolean isBinary, TaskMonitor monitor, MessageLog log,
+			NTHeader ntHeader) throws DuplicateNameException, CodeUnitInsertionException,
 			IOException, MemoryAccessException;
 }

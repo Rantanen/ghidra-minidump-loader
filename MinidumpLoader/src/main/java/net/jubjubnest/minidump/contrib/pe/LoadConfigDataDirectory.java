@@ -28,7 +28,8 @@ import ghidra.program.model.listing.Program;
 import ghidra.program.model.util.CodeUnitInsertionException;
 import ghidra.util.exception.DuplicateNameException;
 import ghidra.util.task.TaskMonitor;
-import net.jubjubnest.minidump.shared.ImageLoadInfo;
+import net.jubjubnest.minidump.contrib.new_.ModuleBaseOffset32DataType;
+import net.jubjubnest.minidump.contrib.new_.ModuleBaseOffset64DataType;
 
 public class LoadConfigDataDirectory extends DataDirectory {
     private final static String NAME = "IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG";
@@ -66,7 +67,7 @@ public class LoadConfigDataDirectory extends DataDirectory {
 	}
 
 	@Override
-	public void markup(Program program, ImageLoadInfo loadInfo, boolean isBinary, TaskMonitor monitor,
+	public void markup(Program program, boolean isBinary, TaskMonitor monitor,
 			MessageLog log, NTHeader ntHeader) throws DuplicateNameException, CodeUnitInsertionException,
 			DataTypeConflictException, IOException {
 
@@ -101,7 +102,12 @@ public class LoadConfigDataDirectory extends DataDirectory {
 			if (monitor.isCancelled()) {
 				return;
 			}
-			DataType dt = ntHeader.getOptionalHeader().is64bit() ? new ImageBaseOffset64DataType() : new ImageBaseOffset32DataType();
+			DataType dt;
+			if (ntHeader.getLoadInfo().sharedProgram) {
+				dt = ntHeader.getOptionalHeader().is64bit() ? new ModuleBaseOffset64DataType() : new ModuleBaseOffset32DataType();
+			} else {
+				dt = ntHeader.getOptionalHeader().is64bit() ? new ImageBaseOffset64DataType() : new ImageBaseOffset32DataType();
+			}
 
 			PeUtils.createData(program, addr, dt, log);
 

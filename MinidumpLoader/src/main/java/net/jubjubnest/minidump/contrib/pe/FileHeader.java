@@ -24,6 +24,7 @@ import ghidra.app.util.bin.StructConverter;
 import ghidra.app.util.bin.format.FactoryBundledWithBinaryReader;
 import net.jubjubnest.minidump.contrib.pe.debug.DebugCOFFSymbol;
 import net.jubjubnest.minidump.contrib.pe.debug.DebugCOFFSymbolAux;
+import net.jubjubnest.minidump.shared.ImageLoadInfo;
 import ghidra.program.model.data.*;
 import ghidra.program.model.mem.MemoryBlock;
 import ghidra.util.DataConverter;
@@ -311,7 +312,7 @@ public class FileHeader implements StructConverter {
         } else {
 			sectionHeaders = new SectionHeader[numberOfSections];
 			for (int i = 0; i < numberOfSections; ++i) {
-				sectionHeaders[i] = SectionHeader.createSectionHeader(reader, tmpIndex);
+				sectionHeaders[i] = SectionHeader.createSectionHeader(reader, ntHeader.getLoadInfo(), tmpIndex);
 
 				// Ensure PointerToRawData + SizeOfRawData doesn't exceed the length of the file
 				int pointerToRawData = sectionHeaders[i].getPointerToRawData();
