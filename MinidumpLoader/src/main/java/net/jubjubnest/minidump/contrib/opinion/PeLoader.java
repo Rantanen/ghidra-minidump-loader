@@ -93,7 +93,7 @@ public class PeLoader extends AbstractPeDebugLoader {
 			long imageBase = ntHeader.getOptionalHeader().getImageBase();
 			String machineName = ntHeader.getFileHeader().getMachineName();
 			String compiler = CompilerOpinion.stripFamily(CompilerOpinion.getOpinion(pe, provider));
-			for (QueryResult result : QueryOpinionService.query(getName(), machineName, compiler)) {
+			for (QueryResult result : QueryOpinionService.query("Portable Executable (PE)", machineName, compiler)) {
 				loadSpecs.add(new LoadSpec(this, imageBase, result));
 			}
 			if (loadSpecs.isEmpty()) {

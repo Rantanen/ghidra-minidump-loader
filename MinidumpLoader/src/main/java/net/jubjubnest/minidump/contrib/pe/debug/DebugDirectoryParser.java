@@ -17,6 +17,7 @@ package net.jubjubnest.minidump.contrib.pe.debug;
 
 import ghidra.app.util.bin.format.FactoryBundledWithBinaryReader;
 import net.jubjubnest.minidump.contrib.pe.OffsetValidator;
+import net.jubjubnest.minidump.contrib.pe.PortableExecutable.SectionLayout;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -90,12 +91,12 @@ public class DebugDirectoryParser {
 	 * @param validator the validator for the directory
 	 * @throws IOException if an I/O error occurs
 	 */
-	public static DebugDirectoryParser createDebugDirectoryParser(
+	public static DebugDirectoryParser createDebugDirectoryParser(SectionLayout layout,
 			FactoryBundledWithBinaryReader reader, long ptr, int size, OffsetValidator validator)
 			throws IOException {
 		DebugDirectoryParser debugDirectoryParser =
 			(DebugDirectoryParser) reader.getFactory().create(DebugDirectoryParser.class);
-		debugDirectoryParser.initDebugDirectoryParser(reader, ptr, size, validator);
+		debugDirectoryParser.initDebugDirectoryParser(layout, reader, ptr, size, validator);
 		return debugDirectoryParser;
 	}
 
@@ -105,8 +106,8 @@ public class DebugDirectoryParser {
 	public DebugDirectoryParser() {
 	}
 
-	private void initDebugDirectoryParser(FactoryBundledWithBinaryReader reader, long ptr,
-			int size, OffsetValidator validator) throws IOException {
+	private void initDebugDirectoryParser(SectionLayout layout, FactoryBundledWithBinaryReader reader,
+			long ptr, int size, OffsetValidator validator) throws IOException {
 		int debugFormatsCount = size / DebugDirectory.IMAGE_SIZEOF_DEBUG_DIRECTORY;
 
 		for (int i = 0; i < debugFormatsCount; ++i) {
@@ -148,7 +149,7 @@ public class DebugDirectoryParser {
 					break;
 				case IMAGE_DEBUG_TYPE_CODEVIEW:
 					debugDir.setDescription("CodeView");
-					codeViewDebug = DebugCodeView.createDebugCodeView(reader, debugDir, validator);
+					codeViewDebug = DebugCodeView.createDebugCodeView(reader, layout, debugDir, validator);
 					break;
 				case IMAGE_DEBUG_TYPE_COFF:
 					debugDir.setDescription("COFF");

@@ -71,7 +71,8 @@ public class DebugDataDirectory extends DataDirectory {
 			return false;
 		}
 		
-    	parser = DebugDirectoryParser.createDebugDirectoryParser(reader, ptr, size, ntHeader);
+    	parser = DebugDirectoryParser.createDebugDirectoryParser(
+    			ntHeader.getLoadInfo().sectionLayout, reader, ptr, size, ntHeader);
     	return true;
     }
 

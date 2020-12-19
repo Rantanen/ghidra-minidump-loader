@@ -134,8 +134,8 @@ public class SeparateDebugHeader implements OffsetValidator {
 
 		ptr += exportedNamesSize;
 
-		parser =
-			DebugDirectoryParser.createDebugDirectoryParser(reader, ptr, debugDirectorySize, this);
+		parser = DebugDirectoryParser.createDebugDirectoryParser(
+				loadInfo.sectionLayout, reader, ptr, debugDirectorySize, this);
 	}
 
 	/**

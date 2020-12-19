@@ -21,6 +21,7 @@ import ghidra.app.util.bin.format.pdb.PdbFactory;
 import ghidra.app.util.bin.format.pdb.PdbInfoDotNetIface;
 import ghidra.app.util.bin.format.pdb.PdbInfoIface;
 import net.jubjubnest.minidump.contrib.pe.OffsetValidator;
+import net.jubjubnest.minidump.contrib.pe.PortableExecutable.SectionLayout;
 import ghidra.program.model.data.ArrayDataType;
 import ghidra.program.model.data.CategoryPath;
 import ghidra.program.model.data.DataType;
@@ -47,10 +48,10 @@ public class DebugCodeView implements StructConverter {
 	 * @param ntHeader 
 	 */
 	static DebugCodeView createDebugCodeView(FactoryBundledWithBinaryReader reader,
-			DebugDirectory debugDir, OffsetValidator validator) throws IOException {
+			SectionLayout layout, DebugDirectory debugDir, OffsetValidator validator) throws IOException {
 		DebugCodeView debugCodeView =
 			(DebugCodeView) reader.getFactory().create(DebugCodeView.class);
-		debugCodeView.initDebugCodeView(reader, debugDir, validator);
+		debugCodeView.initDebugCodeView(reader, layout, debugDir, validator);
 		return debugCodeView;
 	}
 
@@ -60,11 +61,14 @@ public class DebugCodeView implements StructConverter {
 	public DebugCodeView() {
 	}
 
-	private void initDebugCodeView(FactoryBundledWithBinaryReader reader, DebugDirectory debugDir,
+	private void initDebugCodeView(FactoryBundledWithBinaryReader reader, SectionLayout layout, DebugDirectory debugDir,
 			OffsetValidator validator) throws IOException {
 		this.debugDir = debugDir;
 
 		int ptr = debugDir.getPointerToRawData();
+		if (layout == SectionLayout.MEMORY) {
+			ptr = debugDir.getAddressOfRawData();
+		}
 		if (!validator.checkPointer(ptr)) {
 			Msg.error(this, "Invalid pointer " + Long.toHexString(ptr));
 			return;
