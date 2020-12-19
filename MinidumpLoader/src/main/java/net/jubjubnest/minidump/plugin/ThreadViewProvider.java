@@ -17,6 +17,8 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 
+import org.apache.logging.log4j.LogManager;
+
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 
@@ -28,6 +30,12 @@ import ghidra.app.services.GoToService;
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.ByteProvider;
 import ghidra.app.util.bin.MemoryByteProvider;
+import ghidra.app.util.bin.format.pdb2.pdbreader.PdbException;
+import ghidra.app.util.bin.format.pdb2.pdbreader.PdbParser;
+import ghidra.app.util.bin.format.pdb2.pdbreader.PdbReaderOptions;
+import ghidra.app.util.importer.MessageLog;
+import ghidra.app.util.pdb.PdbProgramAttributes;
+import ghidra.app.util.pdb.pdbapplicator.PdbApplicator;
 import ghidra.framework.model.DomainObjectChangedEvent;
 import ghidra.framework.model.DomainObjectListener;
 import ghidra.framework.plugintool.Plugin;
@@ -39,6 +47,8 @@ import ghidra.program.model.listing.ProgramFragment;
 import ghidra.program.model.listing.ProgramUserData;
 import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.util.Msg;
+import ghidra.util.exception.CancelledException;
+import ghidra.util.task.TaskMonitorAdapter;
 import net.jubjubnest.minidump.loader.MinidumpLoader;
 import net.jubjubnest.minidump.shared.ModuleData;
 import net.jubjubnest.minidump.shared.RuntimeFunction;
@@ -49,6 +59,8 @@ import resources.Icons;
 
 // TODO: If provider is desired, it is recommended to move it to its own file
 class ThreadViewProvider extends ComponentProvider implements DomainObjectListener {
+	
+	public static final String NAME = "Memory Dump Threads";
 
 	private JPanel panel;
 	private JTable threadTable;
@@ -61,17 +73,12 @@ class ThreadViewProvider extends ComponentProvider implements DomainObjectListen
 	private ThreadData activeThread;
 
 	public ThreadViewProvider(ThreadViewPlugin plugin, String owner) {
-		super(plugin.getTool(), owner, owner);
+		super(plugin.getTool(), NAME, owner);
 		this.plugin = plugin;
 		buildPanel();
 		createActions();
 	}
 	
-	@Override
-	public String getName() {
-		return "Thread and Stack View";
-	}
-
 	// Customize GUI
 	private void buildPanel() {
 
@@ -104,7 +111,33 @@ class ThreadViewProvider extends ComponentProvider implements DomainObjectListen
 		action = new DockingAction("My Action", getName()) {
 			@Override
 			public void actionPerformed(ActionContext context) {
-				refreshStack();
+				int tx = program.startTransaction("PDB");
+				try {
+					var pdb = PdbParser.parse("C:\\Users\\Rantanen\\source\\repos\\MinidumpTarget\\x64\\Release\\MinidumpTarget.pdb",
+							new PdbReaderOptions(),
+							TaskMonitorAdapter.DUMMY);
+					pdb.deserialize(TaskMonitorAdapter.DUMMY);
+					// pdb.getIdentifiers();
+					PdbApplicator applicator = new PdbApplicator(
+							"C:\\Users\\Rantanen\\source\\repos\\MinidumpTarget\\x64\\Release\\MinidumpTarget.pdb",
+							pdb);
+					applicator.applyTo(program, null, program.getImageBase().getNewAddress(0x7ff6a4930000l), null, TaskMonitorAdapter.DUMMY, new MessageLog());
+					/*
+					PdbProgramAttributes attribs = new PdbProgramAttributes(
+							"4c7a5390-6613-4653-9a75-c06d855d8ff1",
+							"2",
+							false,
+							false,
+							null,
+							"target.pdb",
+							"none.exe");
+					*/
+					program.endTransaction(tx, true);
+				} catch (CancelledException | PdbException | IOException e) {
+					program.endTransaction(tx, false);
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 		};
 		action.setToolBarData(new ToolBarData(Icons.ADD_ICON, null));

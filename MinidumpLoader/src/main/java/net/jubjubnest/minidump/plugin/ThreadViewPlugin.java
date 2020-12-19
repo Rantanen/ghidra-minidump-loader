@@ -41,7 +41,8 @@ import ghidra.util.HelpLocation;
 //@formatter:on
 public class ThreadViewPlugin extends ProgramPlugin {
 
-	ThreadViewProvider provider;
+	ThreadViewProvider threadsProvider;
+	ModulesProvider modulesProvider;
 	GoToService goToService;
 	Program program;
 
@@ -54,12 +55,8 @@ public class ThreadViewPlugin extends ProgramPlugin {
 		super(tool, true, true);
 
 		String pluginName = getName();
-		provider = new ThreadViewProvider(this, pluginName);
-
-		// TODO: Customize help (or remove if help is not desired)
-		String topicName = this.getClass().getPackage().getName();
-		String anchorName = "HelpAnchor";
-		provider.setHelpLocation(new HelpLocation(topicName, anchorName));
+		threadsProvider = new ThreadViewProvider(this, getName());
+		modulesProvider = new ModulesProvider(this, getName());
 	}
 
 	@Override
@@ -75,7 +72,8 @@ public class ThreadViewPlugin extends ProgramPlugin {
 		{
 			var ev = (ProgramActivatedPluginEvent)event;
 			program = ev.getActiveProgram();
-			provider.programActivated(program);
+			threadsProvider.programActivated(program);
+			modulesProvider.programActivated(program);
 		}
 	}
 }

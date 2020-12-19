@@ -47,7 +47,9 @@ public class StackList extends GTable {
 	}
 	
 	public void updateAnalysis(Program program) {
-		model.updateAnalysis(program);
+		if (model != null) {
+			model.updateAnalysis(program);
+		}
 	}
 	
 	private void navigateStack(int item, boolean goToStack) {
