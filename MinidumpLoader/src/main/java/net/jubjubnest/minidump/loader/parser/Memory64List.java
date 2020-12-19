@@ -21,7 +21,7 @@ public class Memory64List {
 		list.memoryRangeCount = byteBuffer.getLong();
 		list.dataOffset = byteBuffer.getLong();
 
-		var descriptors = new ArrayList<Memory64Descriptor>((int) list.memoryRangeCount);
+		list.descriptors = new ArrayList<Memory64Descriptor>((int) list.memoryRangeCount);
 		var segmentBytes = provider.readBytes(offset + DESCRIPTOR_SIZE,
 				list.memoryRangeCount * Memory64Descriptor.RECORD_SIZE);
 		var segmentBuffer = ByteBuffer.wrap(segmentBytes);
@@ -31,9 +31,8 @@ public class Memory64List {
 		for (int i = 0; i < list.memoryRangeCount; i++) {
 			var descriptor = Memory64Descriptor.parse(segmentBuffer, dataOffset);
 			dataOffset += descriptor.segmentSize;
-			descriptors.add(descriptor);
+			list.descriptors.add(descriptor);
 		}
-		list.descriptors = descriptors;
 
 		return list;
 	}

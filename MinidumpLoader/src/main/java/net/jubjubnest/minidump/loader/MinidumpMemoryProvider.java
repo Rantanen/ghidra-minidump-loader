@@ -110,22 +110,20 @@ public class MinidumpMemoryProvider implements ByteProvider {
 
 	@Override
 	public InputStream getInputStream(long index) throws IOException {
-		return new MemoryStream(this, index);
+		return new MemoryStream(index);
 	}
 
 	class MemoryStream extends InputStream {
 
-		MemoryStream(MinidumpMemoryProvider provider, long index) {
-			this.provider = provider;
+		MemoryStream(long index) {
 			this.index = index;
 		}
 
-		MinidumpMemoryProvider provider;
 		long index;
 
 		@Override
 		public int read() throws IOException {
-			int i = provider.readByte(this.index);
+			int i = readByte(this.index);
 			this.index += 1;
 			return i;
 		}
@@ -137,7 +135,7 @@ public class MinidumpMemoryProvider implements ByteProvider {
 			if (off < 0 || len < 0 || len > b.length - off)
 				throw new IndexOutOfBoundsException();
 
-			int written = provider.fillBuffer(b, off, this.index, len);
+			int written = fillBuffer(b, off, this.index, len);
 			if (written != -1)
 				this.index += written;
 			return written;

@@ -23,7 +23,7 @@ public class MemoryInfoList {
 		list.entrySize = byteBuffer.getInt();
 		list.entryCount = byteBuffer.getLong();
 
-		var descriptors = new ArrayList<MemoryInfo>((int) list.entryCount);
+		list.descriptors = new ArrayList<MemoryInfo>((int) list.entryCount);
 		long entriesStart = offset + list.headerSize;
 		for (int i = 0; i < list.entryCount; i++) {
 
@@ -31,9 +31,8 @@ public class MemoryInfoList {
 			var segmentBuffer = ByteBuffer.wrap(segmentBytes);
 			segmentBuffer.order(ByteOrder.LITTLE_ENDIAN);
 
-			descriptors.add(MemoryInfo.parse(segmentBuffer));
+			list.descriptors.add(MemoryInfo.parse(segmentBuffer));
 		}
-		list.descriptors = descriptors;
 
 		return list;
 	}

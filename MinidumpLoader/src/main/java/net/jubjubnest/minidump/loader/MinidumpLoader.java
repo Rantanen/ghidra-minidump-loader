@@ -16,6 +16,8 @@
 package net.jubjubnest.minidump.loader;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -32,6 +34,7 @@ import ghidra.framework.model.DomainObject;
 import ghidra.program.database.mem.FileBytes;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressFactory;
+import ghidra.program.model.address.AddressOutOfBoundsException;
 import ghidra.program.model.address.AddressOverflowException;
 import ghidra.program.model.address.AddressSpace;
 import ghidra.program.model.lang.LanguageCompilerSpecPair;
@@ -39,13 +42,23 @@ import ghidra.program.model.listing.DuplicateGroupException;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.listing.ProgramFragment;
 import ghidra.program.model.listing.ProgramModule;
+import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.util.Msg;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.exception.DuplicateNameException;
+import ghidra.util.exception.InvalidInputException;
 import ghidra.util.exception.NotEmptyException;
+import ghidra.util.exception.NotFoundException;
 import ghidra.util.task.TaskMonitor;
 import net.jubjubnest.minidump.contrib.opinion.PeLoader;
+import net.jubjubnest.minidump.contrib.pe.DataDirectory;
+import net.jubjubnest.minidump.contrib.pe.ExceptionDataDirectory;
+import net.jubjubnest.minidump.contrib.pe.ImportDataDirectory;
+import net.jubjubnest.minidump.contrib.pe.NTHeader;
+import net.jubjubnest.minidump.contrib.pe.OptionalHeader;
+import net.jubjubnest.minidump.contrib.pe.PortableExecutable;
 import net.jubjubnest.minidump.contrib.pe.PortableExecutable.SectionLayout;
+import net.jubjubnest.minidump.loader.parser.ContextX64;
 import net.jubjubnest.minidump.loader.parser.Directory;
 import net.jubjubnest.minidump.loader.parser.Header;
 import net.jubjubnest.minidump.loader.parser.LocationDescriptor;
@@ -54,20 +67,25 @@ import net.jubjubnest.minidump.loader.parser.MemoryInfo;
 import net.jubjubnest.minidump.loader.parser.MemoryInfoList;
 import net.jubjubnest.minidump.loader.parser.Module;
 import net.jubjubnest.minidump.loader.parser.ModuleList;
+import net.jubjubnest.minidump.loader.parser.ThreadInformationBlock;
+import net.jubjubnest.minidump.loader.parser.ThreadList;
+import net.jubjubnest.minidump.shared.ImageLoadInfo;
+import net.jubjubnest.minidump.shared.ModuleData;
+import net.jubjubnest.minidump.shared.ThreadData;
+import net.jubjubnest.minidump.shared.ThreadDataList;
 
 /**
  * Loads Windows Minidump files into Ghidra
  */
 public class MinidumpLoader extends AbstractLibrarySupportLoader {
+	
+	public final static String NAME = "Minidump Loader";
+	public final static String THREAD_DATA = "ThreadData";
+	public final static String MODULE_NAMES = "ModuleNames";
 
 	@Override
 	public String getName() {
-
-		// TODO: Name the loader. This name must match the name of the loader in the
-		// .opinion
-		// files.
-
-		return "Minidump Loader";
+		return NAME;
 	}
 
 	@Override
@@ -103,33 +121,47 @@ public class MinidumpLoader extends AbstractLibrarySupportLoader {
 					String.format("- Stream %s: %s (location: %s)", i, directory.streamType, directory.location));
 		}
 
-		// First load the memory in the program.
+		// First load the memory in the program. More or less everything else depends on memory addresses
+		// for which we'll want a byte provider that can access the bytes based on in-memory addresses.
 		var memoryList = directories.get(Directory.TYPE_MEMORY64LISTSTREAM);
 		if (memoryList == null)
 			throw new IllegalArgumentException("Minidump contains no memory segments");
 		if (memoryList.size() != 1)
 			throw new IllegalArgumentException("Minidump contains multiple memory lists");
 
-		var memory = loadMemory64(provider, memoryList.get(0).location, program, monitor, log);
+		var memory = readMemory64(provider, memoryList.get(0).location, program, monitor, log);
 		var memoryProvider = new MinidumpMemoryProvider(provider, memory);
 
+		// The modules and private memory are somewhat well defined and should not overlap
+		// so the order in which they are loaded doesn't really matter.
+		var moduleList = directories.get(Directory.TYPE_MODULELISTSTREAM);
+		if (moduleList != null) {
+			for (var m : moduleList) {
+				loadModules(provider, loadSpec, memoryProvider, m.location, program, monitor, log);
+			}
+		}
+		
 		var memoryInfoList = directories.get(Directory.TYPE_MEMORYINFOLISTSTREAM);
 		if (memoryInfoList != null) {
 			for (var m : memoryInfoList)
 				loadPrivateMemory(provider, memoryProvider, m.location, program, monitor, log);
 		}
 
-		// Next load the modules if they exist.
-		var moduleList = directories.get(Directory.TYPE_MODULELISTSTREAM);
-		if (moduleList != null) {
-			for (var m : moduleList) {
-				loadModule(provider, loadSpec, memoryProvider, m.location, program, monitor, log);
+		// The thread list must be processed after the private memory is loaded. The memory loading
+		// can't tell stack apart from the heap so instead loading the threads assumes the stack
+		// memory has been loaded already and 'steals' it away from the heap.
+		var threadList = directories.get(Directory.TYPE_THREADLISTSTREAM);
+		if (threadList != null) {
+			for (var m : threadList) {
+				loadThreads(provider, memoryProvider, loadSpec, m.location, program, monitor, log);
 			}
 		}
 	}
 
-	private Memory64List loadMemory64(ByteProvider provider, LocationDescriptor location, Program program,
+	private Memory64List readMemory64(ByteProvider provider, LocationDescriptor location, Program program,
 			TaskMonitor monitor, MessageLog log) throws IOException {
+		if (monitor.isCancelled())
+			return new Memory64List();
 
 		var list = Memory64List.parse(location.offset, provider);
 		log.appendMsg(this.getClass().getName(), String.format("  -> Memory segments: %s", list.memoryRangeCount));
@@ -138,6 +170,8 @@ public class MinidumpLoader extends AbstractLibrarySupportLoader {
 
 	private void loadPrivateMemory(ByteProvider provider, ByteProvider memoryProvider, LocationDescriptor location,
 			Program program, TaskMonitor monitor, MessageLog log) throws IOException, CancelledException {
+		if (monitor.isCancelled())
+			return;
 
 		AddressFactory af = program.getAddressFactory();
 		AddressSpace space = af.getDefaultAddressSpace();
@@ -174,20 +208,33 @@ public class MinidumpLoader extends AbstractLibrarySupportLoader {
 		}
 	}
 
-	private void loadModule(ByteProvider provider, LoadSpec loadSpec, ByteProvider memoryProvider, LocationDescriptor location,
+	class PeImageData {
+		PeLoader loader;
+		PeLoader.ImageInfo info;
+		ByteProvider peBytes;
+		Module module;
+	}
+
+	private void loadModules(ByteProvider provider, LoadSpec loadSpec, ByteProvider memoryProvider, LocationDescriptor location,
 			Program program, TaskMonitor monitor, MessageLog log) throws CancelledException, IOException {
+		if (monitor.isCancelled())
+			return;
 
 		var list = ModuleList.parse(location.offset, provider);
 		var progress = 0;
+		var images = new ArrayList<PeImageData>();
 		for (var module : list.modules) {
+			if (monitor.isCancelled())
+				return;
+			
 			log.appendMsg(this.getClass().getName(), String.format("- Module %s", module.name));
 
 			var baseName = module.getBaseName();
-			var root = program.getListing().getDefaultRootModule();
 
-			int counter = 0;
-			var fileName = baseName;
+			var root = program.getListing().getDefaultRootModule();
 			ProgramModule programModule = null;
+			var fileName = baseName;
+			int counter = 0;
 			while (true) {
 				try {
 					programModule = root.createModule(fileName);
@@ -201,27 +248,159 @@ public class MinidumpLoader extends AbstractLibrarySupportLoader {
 			monitor.setMessage(
 					String.format("[%s]: Loading PE image: %s...", program.getName(), module.getBaseName()));
 			monitor.setProgress(progress * 100 / list.moduleCount);
-			loadPe(module.imageBase, loadSpec, memoryProvider, programModule, module, program, monitor, log);
+			var peBytes = new ByteProviderWrapper(memoryProvider, module.imageBase, module.imageSize);
+			images.add(loadPeImage(peBytes, loadSpec, programModule, module, program, monitor, log));
 			progress++;
 		}
+		
+		for (var image : images)
+			processPeImage(image, program, monitor, log);
 	}
-
-	private void loadPe(long baseAddr, LoadSpec loadSpec, ByteProvider memoryBytes, ProgramModule programModule, Module module,
+	
+	private PeImageData loadPeImage(ByteProvider peBytes, LoadSpec loadSpec, ProgramModule programModule, Module module,
 			Program program, TaskMonitor monitor, MessageLog log)
 			throws IOException, CancelledException {
 
-		var peBytes = new ByteProviderWrapper(memoryBytes, module.imageBase, module.imageSize);
-		var peLoader = new PeLoader(module.imageBase, SectionLayout.MEMORY);
-		var pe = peLoader.loadPortableExecutable(peBytes, loadSpec, new ArrayList<>(), program, monitor, log);
+		if (monitor.isCancelled())
+			return null;
+
+		var loadInfo = new ImageLoadInfo();
+		loadInfo.imageBase = module.imageBase;
+		loadInfo.imageName = module.getBaseName();
+		loadInfo.sharedProgram = true;
+		loadInfo.sectionLayout = SectionLayout.MEMORY;
+		var peLoader = new PeLoader(loadInfo);
+		var image = peLoader.loadImage(peBytes, loadSpec, new ArrayList<>(), program, monitor, log);
+		if (monitor.isCancelled())
+			return null;
 		
 		// Move the sections to the module folder.
+		var baseAddr = module.imageBase;
 		AddressFactory af = program.getAddressFactory();
 		AddressSpace space = af.getDefaultAddressSpace();
-		moveFragment(program, space.getAddress(baseAddr), programModule);
-		for (var s : pe.getNTHeader().getFileHeader().getSectionHeaders()) {
+		var imageAddr = space.getAddress(baseAddr);
+		moveFragment(program, imageAddr, programModule);
+		for (var s : image.pe.getNTHeader().getFileHeader().getSectionHeaders()) {
 			moveFragment(program, space.getAddress(baseAddr + s.getVirtualAddress()), programModule);
 		}
 		moveFragment(program, "Debug Data", programModule);
+
+		var result = new PeImageData();
+		result.loader = peLoader;
+		result.info = image;
+		result.peBytes = peBytes;
+		result.module = module;
+
+		return result;
+	}
+	
+	private void storeRuntimeInfoAddress(PeImageData data, Program program) {
+
+		var image = data.info;
+		var baseAddr = data.module.imageBase;
+		var baseAddress = program.getAddressFactory().getDefaultAddressSpace().getAddress(baseAddr);
+		
+		var userData = program.getProgramUserData();
+		var transaction = userData.startTransaction();
+		try {
+			var rti = getRuntimeInfoAddress(baseAddr, image.pe);
+			if (rti == null)
+				return;
+			var moduleData = new ModuleData(data.module.getBaseName(), baseAddr, rti.start, rti.end);
+			ModuleData.setModuleData(userData, baseAddress, moduleData);
+		} finally {
+			userData.endTransaction(transaction);
+		}
+	}
+	
+	class AddressRange { long start; long end; }
+	private AddressRange getRuntimeInfoAddress(long baseAddress, PortableExecutable pe) {
+		NTHeader ntHeader = pe.getNTHeader();
+		if (ntHeader == null) {
+			return null;
+		}
+		
+		OptionalHeader optionalHeader = ntHeader.getOptionalHeader();
+		if (optionalHeader == null) {
+			return null;
+		}
+
+		DataDirectory[] dataDirectories = optionalHeader.getDataDirectories();
+		if (dataDirectories == null) {
+			
+		}
+		if (dataDirectories.length <= OptionalHeader.IMAGE_DIRECTORY_ENTRY_EXCEPTION) {
+			return null;
+		}
+		ExceptionDataDirectory idd =
+			(ExceptionDataDirectory) dataDirectories[OptionalHeader.IMAGE_DIRECTORY_ENTRY_EXCEPTION];
+		if (idd == null) {
+			return null;
+		}
+		
+		AddressRange range = new AddressRange();
+		range.start = baseAddress + idd.getVirtualAddress();
+		range.end = range.start + idd.getSize();
+		return range;
+	}
+		
+	private void processPeImage(PeImageData image, Program program, TaskMonitor monitor, MessageLog log)
+			throws IOException {
+		
+		image.loader.processImage(image.peBytes, image.info, new ArrayList<>(), program, monitor, log);
+		storeRuntimeInfoAddress(image, program);
+	}
+	
+	private void loadThreads(ByteProvider provider, ByteProvider memoryProvider, LoadSpec loadSpec, LocationDescriptor location,
+			Program program, TaskMonitor monitor, MessageLog log) throws IOException {
+		if (monitor.isCancelled())
+			return;
+
+		AddressFactory af = program.getAddressFactory();
+		AddressSpace space = af.getDefaultAddressSpace();
+		
+		var threadDataList = new ThreadDataList();
+		var threadList = ThreadList.parse(location.offset, provider);
+		for (var thread : threadList.threads) {
+			var tib = ThreadInformationBlock.parse(loadSpec, thread.teb, memoryProvider);
+			
+			var ctx = ContextX64.parse(thread.threadContext.offset, provider);
+			
+			var threadData = new ThreadData();
+			threadData.id = thread.threadId;
+			threadData.stackBase = tib.stackBase - 1;
+			threadData.stackLimit = tib.stackLimit;
+			threadData.stackPointer = thread.stack.startOfMemoryRange;
+			threadData.sp = ctx.rsp;
+			threadData.ip = ctx.rip;
+			threadDataList.threads.add(threadData);
+			
+			var listing = program.getListing();
+			var root = listing.getDefaultRootModule();
+			ProgramFragment threadStack;
+			try {
+				threadStack = root.createFragment(String.format("Stack:t%s", thread.threadId));
+			} catch (DuplicateNameException e) {
+				Msg.warn(this, "Duplicate thread ID: " + thread.threadId);
+				continue;
+			}
+			
+			long stackStart = tib.stackLimit;
+			long stackEnd = tib.stackBase - 1;
+			try {
+				threadStack.move(space.getAddress(stackStart), space.getAddress(stackEnd));
+			} catch (AddressOutOfBoundsException | NotFoundException e) {
+				Msg.warn(this, String.format("Stack for thread %s was not part of the dump.", thread.threadId));
+			}
+		}
+		
+		var userData = program.getProgramUserData();
+		var transaction = userData.startTransaction();
+		try {
+			ThreadDataList.setThreadDataList(program, userData, threadDataList);
+		} finally {
+			userData.endTransaction(transaction);
+		}
 	}
 
 	@Override
@@ -240,6 +419,9 @@ public class MinidumpLoader extends AbstractLibrarySupportLoader {
 		var listing = program.getListing();
 		for (String tree : listing.getTreeNames()) {
 			ProgramFragment fragment = listing.getFragment(tree, addr);
+			if (fragment == null)
+				continue;
+
 			moveFragment(program, fragment, module);
 		}
 	}
@@ -248,6 +430,9 @@ public class MinidumpLoader extends AbstractLibrarySupportLoader {
 		var listing = program.getListing();
 		for (String tree : listing.getTreeNames()) {
 			ProgramFragment fragment = listing.getFragment(tree, name);
+			if (fragment == null)
+				continue;
+			
 			moveFragment(program, fragment, module);
 		}
 	}
