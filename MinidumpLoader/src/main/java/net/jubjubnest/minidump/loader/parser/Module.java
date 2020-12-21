@@ -30,8 +30,27 @@ public class Module {
 	}
 
 	public String getBaseName() {
-		return new File(this.name).getName();
+		return getFilename(new File(this.name).getPath());
 	}
+
+	private String getFilename(String fullPath) {
+		// Remove any trailing slashes
+		String editedPath = fullPath;
+		editedPath = editedPath.replaceAll("[\\/]$", "");
+
+		int lastIndexForwardSlash = editedPath.lastIndexOf('/');
+		int lastIndexBackSlash = editedPath.lastIndexOf('\\');
+
+		if (lastIndexForwardSlash == -1 && lastIndexBackSlash == -1) {
+			return editedPath;
+		}
+
+		int indexToUse = (lastIndexForwardSlash > lastIndexBackSlash) ? lastIndexForwardSlash
+				: lastIndexBackSlash;
+
+		return editedPath.substring(indexToUse + 1);
+	}
+	
 
 	public long imageBase;
 	public int imageSize;
