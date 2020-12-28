@@ -1,12 +1,32 @@
 package net.jubjubnest.minidump.plugin;
 
+import java.util.List;
+
+import javax.swing.JButton;
 import javax.swing.table.AbstractTableModel;
 
+import ghidra.util.exception.NotYetImplementedException;
+
 public class ModulesTableModel extends AbstractTableModel {
+	
+	private List<ModuleState> items;
+	private String[] headers = new String[] {
+		"Name",
+		"Symbols",
+	};
+	
+	public ModulesTableModel(List<ModuleState> items) {
+		this.items = items;
+	}
+	
+	@Override
+	public String getColumnName(int column) {
+		return headers[column];
+	}
 
 	@Override
 	public int getRowCount() {
-		return 0;
+		return items.size();
 	}
 
 	@Override
@@ -16,7 +36,20 @@ public class ModulesTableModel extends AbstractTableModel {
 
 	@Override
 	public Object getValueAt(int rowIndex, int columnIndex) {
-		return null;
+		ModuleState item = items.get(rowIndex);
+		
+		switch (columnIndex) {
+		case 0:
+			return item.name;
+		case 1:
+			if (item.loadedSymbols != null) {
+				return item.loadedSymbols;
+			} else {
+				return "<Symbols not loaded>";
+			}
+		default:
+			throw new NotYetImplementedException();
+		}
 	}
 
 }
