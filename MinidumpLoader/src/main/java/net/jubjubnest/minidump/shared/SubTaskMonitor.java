@@ -1,16 +1,27 @@
 package net.jubjubnest.minidump.shared;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import ghidra.util.task.TaskMonitor;
 import ghidra.util.task.WrappingTaskMonitor;
 
 public class SubTaskMonitor extends WrappingTaskMonitor {
 	
 	private String title;
-	private long maximum = 0;
-	private long progress = 0;
 	private String message;
 	
-	private String stripPrefix;
+	private List<RegexRule> replaceRules = new ArrayList<>();
+	
+	static class RegexRule {
+		public RegexRule(String pattern, String replace) {
+			this.pattern = pattern;
+			this.replace = replace;
+		}
+
+		public String pattern;
+		public String replace;
+	}
 
 	public SubTaskMonitor(String title, TaskMonitor delegate) {
 		this(title, null, delegate);
@@ -23,50 +34,11 @@ public class SubTaskMonitor extends WrappingTaskMonitor {
 		updateMessage();
 	}
 	
-	public void setStripPrefix(String prefix) {
-		stripPrefix = prefix;
+	public void addReplaceRule(String pattern, String replace) {
+		this.replaceRules.add(new RegexRule(pattern, replace));
 	}
-	
-	@Override
-	public long getMaximum() {
-		return maximum;
-	}
-	
-	@Override
-	public void initialize(long max) {
-		progress = 0;
-		maximum = max;
-		updateMessage();
-	}
-	
-	@Override
-	public synchronized void setMaximum(long max) {
-		maximum = max;
-		updateMessage();
-	}
-	
-	@Override
-	public long getProgress() {
-		return progress;
-	}
-	
-	@Override
-	public void setProgress(long value) {
-		progress = value;
-		updateMessage();
-	}
-	
-	@Override
-	public void incrementProgress(long incrementAmount) {
-		progress += incrementAmount;
-		updateMessage();
-	}
-	
-	public void setMessage(String message) {
-		if (stripPrefix != null && message.startsWith(stripPrefix)) {
-			message = message.substring(stripPrefix.length());
-		}
 
+	public void setMessage(String message) {
 		this.message = message;
 		updateMessage();
 	}
@@ -79,13 +51,13 @@ public class SubTaskMonitor extends WrappingTaskMonitor {
 	private void updateMessage() {
 		StringBuilder builder = new StringBuilder(this.title);
 		if (message != null) {
-			builder.append(": ").append(message);
+			String replacedMessage = message;
+			for (RegexRule rule : replaceRules) {
+				replacedMessage = replacedMessage.replaceAll(rule.pattern, rule.replace);
+			}
+			builder.append(": ").append(replacedMessage);
 		} else {
 			builder.append("...");
-		}
-		
-		if (maximum > 0) {
-			builder.append(" (").append(progress).append('/').append(maximum).append(')');
 		}
 		
 		super.setMessage(builder.toString());

@@ -12,7 +12,7 @@ import ghidra.util.Saveable;
 
 public class ModuleData {
 	
-	static private final String OBJECT_MAP_KEY = "MODULE_DATA";
+	public static final String PROPERTY_NAME = "MODULE_DATA";
 	
 	public String name;
 	public String loadedSymbols;
@@ -84,7 +84,7 @@ public class ModuleData {
 	}
 
 	private static ObjectPropertyMap getModuleDataMap(Program program, boolean create) {
-		return ObjectMapResolver.getModuleDataMap(program, OBJECT_MAP_KEY, Record.class, create);
+		return ObjectMapResolver.getModuleDataMap(program, PROPERTY_NAME, Record.class, create);
 	}
 	
 	public static class Record implements Saveable {

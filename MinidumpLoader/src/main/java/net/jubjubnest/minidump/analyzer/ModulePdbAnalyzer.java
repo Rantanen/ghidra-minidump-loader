@@ -1,10 +1,11 @@
 package net.jubjubnest.minidump.analyzer;
 
+import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
+import docking.widgets.filechooser.GhidraFileChooser;
+import docking.widgets.filechooser.GhidraFileChooserMode;
 import ghidra.app.services.AbstractAnalyzer;
 import ghidra.app.services.AnalysisPriority;
 import ghidra.app.services.AnalyzerType;
@@ -18,11 +19,11 @@ import ghidra.framework.options.Options;
 import ghidra.program.model.address.AddressSetView;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.MemoryAccessException;
+import ghidra.util.SystemUtilities;
 import ghidra.util.exception.CancelledException;
+import ghidra.util.filechooser.ExtensionFileFilter;
 import ghidra.util.task.TaskMonitor;
-import ghidra.util.task.WrappingTaskMonitor;
 import net.jubjubnest.minidump.loader.MinidumpLoader;
-import net.jubjubnest.minidump.plugin.LocatePdbTask;
 import net.jubjubnest.minidump.plugin.PdbResolver;
 import net.jubjubnest.minidump.shared.ModuleData;
 import net.jubjubnest.minidump.shared.SubTaskMonitor;
@@ -60,18 +61,16 @@ public class ModulePdbAnalyzer extends AbstractAnalyzer {
 		}
 		lastTransactionId = txId;
 		
-		List<ModuleData> modules = ModuleData.getAllModules(program);
-		Map<ModuleData, PdbResolver.PdbResult> modulePdbs = new HashMap<>();
-		monitor.setProgress(0);
-		monitor.setMaximum(modules.size());
 		for (ModuleData md : ModuleData.getAllModules(program) ) {
-			PdbResolver.PdbResult result = locateModulePdb(program, md, log, monitor);
-			if (result == null) {
+			if (md.loadedSymbols != null) {
 				continue;
 			}
-			
+
+			monitor.setMessage(md.name + ": Locating PDB...");
+			PdbResolver.PdbResult result = locateModulePdb(program, md, log, monitor);
+
+			monitor.setMessage(md.name + ": Loading PDB...");
 			loadModulePdb(program, md, result, log, monitor);
-			monitor.incrementProgress(1);
 		}
 		
 		return true;
@@ -87,13 +86,45 @@ public class ModulePdbAnalyzer extends AbstractAnalyzer {
 			return null;
 		}
 
+		// Attempt to locate the PDB via non-interactive means.
 		try {
-			return PdbResolver.locatePdb(pdbAttributes, monitor);
+			PdbResolver.PdbResult result = PdbResolver.locatePdb(pdbAttributes, monitor);
+			if (result != null) {
+				return result;
+			}
 		} catch (MemoryAccessException | IOException | PdbException e) {
 			log.appendMsg(getName(), "Error locating PDB for " + md.name);
 			log.appendException(e);
-			return null;
 		}
+
+		// If we're not in a headless mode, ask the user for input.
+		if (!SystemUtilities.isInHeadlessMode()) {
+				
+			GhidraFileChooser pdbChooser = new GhidraFileChooser(null);
+			pdbChooser.setTitle("Select " + md.name + " PDB file");
+			pdbChooser.setApproveButtonText("Select PDB");
+			pdbChooser.setFileSelectionMode(GhidraFileChooserMode.FILES_ONLY);
+			pdbChooser.setFileFilter(new ExtensionFileFilter(new String[] { "pdb" }, "Program Database Files"));
+			
+			if (pdbAttributes.getPdbFile() != null) {
+				File expected = new File(pdbAttributes.getPdbFile());
+				pdbChooser.setCurrentDirectory(expected.getParentFile());
+			}
+
+			File pdbFile = pdbChooser.getSelectedFile();
+			PdbResolver.PdbResult result;
+			try {
+				result = PdbResolver.validatePdbCandidate(pdbFile, true, pdbAttributes, monitor);
+				if (result != null) {
+					return result;
+				}
+			} catch (IOException | PdbException e) {
+				log.appendMsg(getName(), "Error locating PDB for " + md.name);
+				log.appendException(e);
+			}
+		}
+		
+		return null;
 	}
 	
 	public void loadModulePdb(Program program, ModuleData md, PdbResolver.PdbResult pdbResult, MessageLog log, TaskMonitor monitor) throws CancelledException {
@@ -106,7 +137,8 @@ public class ModulePdbAnalyzer extends AbstractAnalyzer {
 			pdbResult.pdb.deserialize(subMonitor);
 
 			subMonitor = new SubTaskMonitor(pdbName, "Applying...", monitor);
-			subMonitor.setStripPrefix("PDB: ");
+			subMonitor.addReplaceRule("^PDB: ", "");
+			subMonitor.addReplaceRule("^Applying \\d+ ", "Applying ");
 			PdbApplicator applicator = new PdbApplicator(pdbResult.file.getAbsolutePath(), pdbResult.pdb);
 			applicator.applyTo(program, null, md.baseAddress, null, subMonitor, new MessageLog());
 

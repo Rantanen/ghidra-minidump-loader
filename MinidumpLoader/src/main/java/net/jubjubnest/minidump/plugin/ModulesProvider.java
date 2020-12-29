@@ -3,8 +3,6 @@ package net.jubjubnest.minidump.plugin;
 import java.awt.BorderLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,34 +11,19 @@ import javax.swing.JPanel;
 
 import docking.ActionContext;
 import docking.ComponentProvider;
-import docking.Tool;
 import docking.action.DockingAction;
 import docking.action.ToolBarData;
-import docking.widgets.filechooser.GhidraFileChooser;
-import docking.widgets.filechooser.GhidraFileChooserMode;
-import docking.widgets.table.GTable;
-import ghidra.app.util.bin.format.pdb2.pdbreader.AbstractPdb;
-import ghidra.app.util.bin.format.pdb2.pdbreader.PdbException;
-import ghidra.app.util.bin.format.pdb2.pdbreader.PdbParser;
-import ghidra.app.util.bin.format.pdb2.pdbreader.PdbReaderOptions;
-import ghidra.app.util.importer.MessageLog;
-import ghidra.app.util.pdb.PdbLocator;
-import ghidra.app.util.pdb.PdbProgramAttributes;
-import ghidra.app.util.pdb.pdbapplicator.PdbApplicator;
-import ghidra.program.model.address.Address;
+import ghidra.framework.model.DomainObjectChangeRecord;
+import ghidra.framework.model.DomainObjectChangedEvent;
+import ghidra.framework.model.DomainObjectListener;
 import ghidra.program.model.listing.Program;
-import ghidra.program.model.listing.ProgramUserData;
-import ghidra.program.model.mem.MemoryAccessException;
-import ghidra.util.Msg;
-import ghidra.util.exception.CancelledException;
-import ghidra.util.filechooser.ExtensionFileFilter;
+import ghidra.program.util.ChangeManager;
+import ghidra.program.util.CodeUnitPropertyChangeRecord;
 import ghidra.util.task.TaskLauncher;
-import ghidra.util.task.TaskMonitor;
-import ghidra.util.task.TaskMonitorAdapter;
 import net.jubjubnest.minidump.shared.ModuleData;
 import resources.Icons;
 
-public class ModulesProvider extends ComponentProvider {
+public class ModulesProvider extends ComponentProvider implements DomainObjectListener {
 	
 	public static final String NAME = "Memory Dump Modules";
 	
@@ -67,13 +50,23 @@ public class ModulesProvider extends ComponentProvider {
 		panel.add(table);
 		setVisible(true);
 	}
+	
+	static int counter = 0;
 
 	// TODO: Customize actions
 	private void createActions() {
 		action = new DockingAction("Load Located Symbols", getName()) {
 			@Override
 			public void actionPerformed(ActionContext context) {
-				loadLocatedSymbols();
+
+				if (program.getCurrentTransaction() == null) {
+					program.startTransaction("Action");
+				}
+				ModuleData d = ModuleData.getModuleData(program, program.getImageBase().getNewAddress(0x7ff6a4930000l));
+				counter += 1;
+				d.loadedSymbols = "symbols" + counter;
+				ModuleData.setModuleData(program, d);
+				// loadLocatedSymbols();
 			}
 		};
 		action.setToolBarData(new ToolBarData(Icons.ADD_ICON, null));
@@ -85,19 +78,24 @@ public class ModulesProvider extends ComponentProvider {
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				if (e.getClickCount() == 2) {
-					if (table.getSelectedColumn() == 0) {
-						locateSymbols(table.getSelectedRow());
-					} else {
-						navigateModule(table.getSelectedRow());
-					}
+					navigateModule(table.getSelectedRow());
 				}
 			}
 		});
 	}
 	
-	public void programActivated(Program program) {
-		this.program = program;
-		refreshModules(true);
+	public void programActivated(Program newProgram) {
+		if (this.program != null) {
+			this.program.removeListener(this);
+		}
+
+		this.program = newProgram;
+		
+		if (this.program != null) {
+			this.program.addListener(this);
+		}
+
+		refreshModules();
 	}
 	
 	public List<ModuleState> getModules() {
@@ -111,6 +109,7 @@ public class ModulesProvider extends ComponentProvider {
 		plugin.goToService.goTo(module.baseAddress);
 	}
 	
+	/*
 	void locateSymbols(int idx) {
 		var module = table.getModule(idx);
 		if (module == null)
@@ -122,8 +121,9 @@ public class ModulesProvider extends ComponentProvider {
 	protected void loadLocatedSymbols() {
 		TaskLauncher.launch(new LoadPdbsTask(program, this));
 	}
+	*/
 
-	public void refreshModules(boolean reload) {
+	public void refreshModules() {
 		if (program == null) {
 			this.table.setModel(new ModulesTableModel(new ArrayList<>()));
 			return;
@@ -133,19 +133,33 @@ public class ModulesProvider extends ComponentProvider {
 		if (moduleData == null)
 			return;
 		
-		if (reload) {
-			List<ModuleState> items = new ArrayList<>();
-			for (ModuleData md : moduleData) {
-				items.add(new ModuleState(program, md));
-			}
-			this.table.setFrames(items, program);
-		} else {
-			this.table.repaint();
+		List<ModuleState> items = new ArrayList<>();
+		for (ModuleData md : moduleData) {
+			items.add(new ModuleState(program, md));
 		}
+		this.table.setFrames(items, program);
 	}
 
 	@Override
 	public JComponent getComponent() {
 		return panel;
+	}
+
+	@Override
+	public void domainObjectChanged(DomainObjectChangedEvent ev) {
+		if (!ev.containsEvent(ChangeManager.DOCR_CODE_UNIT_PROPERTY_CHANGED)) {
+			return;
+		}
+		
+		for (DomainObjectChangeRecord e : ev) {
+			switch (e.getEventType()) {
+			case ChangeManager.DOCR_CODE_UNIT_PROPERTY_CHANGED:
+				CodeUnitPropertyChangeRecord propChange = (CodeUnitPropertyChangeRecord)e;
+				if (propChange.getPropertyName().equals(ModuleData.PROPERTY_NAME)) {
+					refreshModules();
+				}
+				break;
+			}
+		}
 	}
 }
