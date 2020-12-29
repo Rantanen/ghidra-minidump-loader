@@ -7,23 +7,83 @@ import java.util.List;
 
 import com.google.common.io.Files;
 
+import ghidra.app.util.bin.format.pdb2.pdbreader.AbstractPdb;
+import ghidra.app.util.bin.format.pdb2.pdbreader.PdbException;
+import ghidra.app.util.bin.format.pdb2.pdbreader.PdbParser;
+import ghidra.app.util.bin.format.pdb2.pdbreader.PdbReaderOptions;
 import ghidra.app.util.pdb.PdbProgramAttributes;
 import ghidra.net.http.HttpUtil;
+import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.MemoryAccessException;
+import ghidra.util.exception.CancelledException;
 import ghidra.util.exception.NotYetImplementedException;
+import ghidra.util.task.TaskMonitor;
+import net.jubjubnest.minidump.shared.ModuleData;
 
 public class PdbResolver {
 
-	public static PdbProgramAttributes getAttributes(Program program, ModuleState module) throws MemoryAccessException, IOException {
+	public static PdbProgramAttributes getAttributes(Program program, Address moduleBase) throws MemoryAccessException, IOException {
 
 		boolean analyzed = program.getOptions(Program.PROGRAM_INFO).getBoolean(Program.ANALYZED, false);
-		ModuleParser.PdbInfo pdbInfo = ModuleParser.getPdbInfo(program, module.baseAddress);
+		ModuleParser.PdbInfo pdbInfo = ModuleParser.getPdbInfo(program, moduleBase);
 		PdbProgramAttributes pdbAttributes = new PdbProgramAttributes(
 				pdbInfo.guid, Integer.toString(pdbInfo.age),
 				false, analyzed, null, pdbInfo.pdbName, "RSDS");
 
 		return pdbAttributes;
+	}
+
+	public static class PdbResult {
+		public File file;
+		public AbstractPdb pdb;
+	}
+
+	public static PdbResult locatePdb(PdbProgramAttributes pdbAttributes, TaskMonitor monitor)
+			throws MemoryAccessException, IOException, CancelledException, PdbException {
+
+		if (pdbAttributes.getPdbFile() != null) {
+			File candidate = new File(pdbAttributes.getPdbFile());
+			PdbResult result = validatePdbCandidate(candidate, true, pdbAttributes, monitor);
+			if (result != null) {
+				return result;
+			}
+		}
+		
+		PdbResolver.SymbolPath symbolPath = PdbResolver.parseSymbolPath(
+				"srv*C:\\symbols*\\\\localhost\\NetworkSymCache*https://msdl.microsoft.com/download/symbols");
+		File symbolServerMatch = PdbResolver.loadSymbols(symbolPath, pdbAttributes);
+		if (symbolServerMatch != null) {
+			PdbResult result = new PdbResult();
+			result.file = symbolServerMatch;
+			result.pdb = PdbParser.parse(symbolServerMatch.getAbsolutePath(), new PdbReaderOptions(), monitor);
+			return result;
+		}
+
+		return null;
+	}
+
+	public static PdbResult validatePdbCandidate(File candidate, boolean verifyGuidAge, PdbProgramAttributes pdbAttributes, TaskMonitor monitor) throws CancelledException, IOException, PdbException {
+
+		if (!candidate.exists()) {
+			return null;
+		}
+
+		AbstractPdb pdb = PdbParser.parse(candidate.getAbsolutePath(), new PdbReaderOptions(), monitor);
+		if (verifyGuidAge) {
+			if (!pdbAttributes.getPdbGuid().equals(pdb.getGuid().toString())) {
+				return null;
+			}
+
+			if (!pdbAttributes.getPdbAge().equals(Integer.toHexString(pdb.getAge()))) {
+				return null;
+			}
+		}
+		
+		PdbResult result = new PdbResult();
+		result.file = candidate;
+		result.pdb = pdb;
+		return result;
 	}
 	
 	public static class SymbolServerResult {
