@@ -402,7 +402,7 @@ public class ResourceDataDirectory extends DataDirectory {
 
 	private void processVersionInfo(Address addr, ResourceInfo info, Program program,
 			MessageLog log, TaskMonitor monitor) throws IOException {
-		Options infoList = program.getOptions(Program.PROGRAM_INFO);
+		Options infoList = ntHeader.getLoadInfo().getModuleOptions(program);
 		VS_VERSION_INFO versionInfo = null;
 		try {
 			int ptr = ntHeader.rvaToPointer(info.getAddress());

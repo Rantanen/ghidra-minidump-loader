@@ -1,5 +1,7 @@
 package net.jubjubnest.minidump.shared;
 
+import ghidra.framework.options.Options;
+import ghidra.program.model.listing.Program;
 import net.jubjubnest.minidump.contrib.pe.PortableExecutable.SectionLayout;
 
 public class ImageLoadInfo {
@@ -30,5 +32,15 @@ public class ImageLoadInfo {
 			return name;
 		return imageName.toUpperCase() + "::" + name;
 		*/
+	}
+	
+	public Options getModuleOptions(Program program) {
+		Options programOptions = program.getOptions(Program.PROGRAM_INFO);
+		if (sharedProgram == false) {
+			return programOptions;
+		}
+		
+		Options moduleOptions = programOptions.getOptions("Module Information");
+		return moduleOptions.getOptions(imageName.replace('.', '_'));
 	}
 }

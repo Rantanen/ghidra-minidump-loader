@@ -25,10 +25,12 @@ import ghidra.app.util.MemoryBlockUtils;
 import ghidra.app.util.Option;
 import ghidra.app.util.bin.ByteProvider;
 import ghidra.app.util.bin.ByteProviderWrapper;
+import ghidra.app.util.bin.format.pdb.PdbParserConstants;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.app.util.opinion.AbstractLibrarySupportLoader;
 import ghidra.app.util.opinion.LoadSpec;
 import ghidra.framework.model.DomainObject;
+import ghidra.framework.options.Options;
 import ghidra.program.database.mem.FileBytes;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressFactory;
@@ -40,6 +42,7 @@ import ghidra.program.model.listing.DuplicateGroupException;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.listing.ProgramFragment;
 import ghidra.program.model.listing.ProgramModule;
+import ghidra.program.model.reloc.RelocationTable;
 import ghidra.util.Msg;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.exception.DuplicateNameException;
@@ -74,9 +77,7 @@ import net.jubjubnest.minidump.shared.ThreadData;
  */
 public class MinidumpLoader extends AbstractLibrarySupportLoader {
 	
-	public final static String NAME = "Minidump Loader";
-	public final static String THREAD_DATA = "ThreadData";
-	public final static String MODULE_NAMES = "ModuleNames";
+	public final static String NAME = "Windows Minidump";
 
 	@Override
 	public String getName() {
@@ -292,6 +293,49 @@ public class MinidumpLoader extends AbstractLibrarySupportLoader {
 
 		return result;
 	}
+
+	private void moveProgramOptions(Module module, Program program) {
+		Options programOptions = program.getOptions(Program.PROGRAM_INFO);
+		Options allModuleOptions = programOptions.getOptions("Module Information");
+		Options moduleOptions = allModuleOptions.getOptions(module.getBaseName().replace('.', '_'));
+		
+		for (String opt : new String[] {
+			PdbParserConstants.PDB_AGE,
+			PdbParserConstants.PDB_FILE,
+			PdbParserConstants.PDB_GUID,
+			PdbParserConstants.PDB_SIGNATURE,
+			PdbParserConstants.PDB_VERSION,
+			"Debug Misc",
+			"Debug Misc Datatype",
+		}) {
+			if (!programOptions.contains(opt))
+				continue;
+			
+			moduleOptions.setString(opt, programOptions.getString(opt, null));
+			programOptions.removeOption(opt);
+		}
+		
+		for (String opt : new String[] {
+			"SectionAlignment"
+		}) {
+			if (!programOptions.contains(opt))
+				continue;
+			
+			moduleOptions.setInt(opt, programOptions.getInt(opt, 0));
+			programOptions.removeOption(opt);
+		}
+		
+		for (String opt : new String[] {
+			PdbParserConstants.PDB_LOADED,
+			RelocationTable.RELOCATABLE_PROP_NAME,
+		}) {
+			if (!programOptions.contains(opt))
+				continue;
+			
+			moduleOptions.setBoolean(opt, programOptions.getBoolean(opt, false));
+			programOptions.removeOption(opt);
+		}
+	}
 	
 	private void storeModuleData(PeImageData data, Program program) {
 
@@ -346,6 +390,7 @@ public class MinidumpLoader extends AbstractLibrarySupportLoader {
 			throws IOException {
 		
 		image.loader.processImage(image.peBytes, image.info, new ArrayList<>(), program, monitor, log);
+		moveProgramOptions(image.module, program);
 		storeModuleData(image, program);
 	}
 	
