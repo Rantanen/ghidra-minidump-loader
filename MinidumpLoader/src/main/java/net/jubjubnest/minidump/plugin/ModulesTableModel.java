@@ -42,11 +42,14 @@ public class ModulesTableModel extends AbstractTableModel {
 		case 0:
 			return item.name;
 		case 1:
-			if (item.loadedSymbols != null) {
-				return item.loadedSymbols;
-			} else {
-				return "<Symbols not loaded>";
+			if (item.symbolPath == null) {
+				return "No symbols";
 			}
+			
+			if (item.symbolsLoaded) {
+				return "Loaded: " + item.symbolPath;
+			}
+			return "Located: " + item.symbolPath;
 		default:
 			throw new NotYetImplementedException();
 		}

@@ -35,7 +35,7 @@ public class ModuleParser {
 		return info;
 	}
 
-	private static Address optionalHeader(Program program, Address moduleBase) throws MemoryAccessException, IOException {
+	private static Address optionalHeader(Program program, Address moduleBase) throws IOException {
 		ByteProvider provider = new MemoryByteProvider(program.getMemory(), moduleBase);
 		BinaryReader reader = new BinaryReader(provider, true);
 		

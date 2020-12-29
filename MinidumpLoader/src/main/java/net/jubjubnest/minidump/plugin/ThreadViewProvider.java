@@ -48,6 +48,7 @@ import ghidra.program.model.listing.ProgramUserData;
 import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.util.Msg;
 import ghidra.util.exception.CancelledException;
+import ghidra.util.task.TaskMonitor;
 import ghidra.util.task.TaskMonitorAdapter;
 import net.jubjubnest.minidump.loader.MinidumpLoader;
 import net.jubjubnest.minidump.shared.ModuleData;
@@ -111,33 +112,6 @@ class ThreadViewProvider extends ComponentProvider implements DomainObjectListen
 		action = new DockingAction("My Action", getName()) {
 			@Override
 			public void actionPerformed(ActionContext context) {
-				int tx = program.startTransaction("PDB");
-				try {
-					var pdb = PdbParser.parse("C:\\Users\\Rantanen\\source\\repos\\MinidumpTarget\\x64\\Release\\MinidumpTarget.pdb",
-							new PdbReaderOptions(),
-							TaskMonitorAdapter.DUMMY);
-					pdb.deserialize(TaskMonitorAdapter.DUMMY);
-					// pdb.getIdentifiers();
-					PdbApplicator applicator = new PdbApplicator(
-							"C:\\Users\\Rantanen\\source\\repos\\MinidumpTarget\\x64\\Release\\MinidumpTarget.pdb",
-							pdb);
-					applicator.applyTo(program, null, program.getImageBase().getNewAddress(0x7ff6a4930000l), null, TaskMonitorAdapter.DUMMY, new MessageLog());
-					/*
-					PdbProgramAttributes attribs = new PdbProgramAttributes(
-							"4c7a5390-6613-4653-9a75-c06d855d8ff1",
-							"2",
-							false,
-							false,
-							null,
-							"target.pdb",
-							"none.exe");
-					*/
-					program.endTransaction(tx, true);
-				} catch (CancelledException | PdbException | IOException e) {
-					program.endTransaction(tx, false);
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
 			}
 		};
 		action.setToolBarData(new ToolBarData(Icons.ADD_ICON, null));

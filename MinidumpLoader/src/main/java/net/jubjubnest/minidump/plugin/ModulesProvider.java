@@ -19,6 +19,7 @@ import docking.action.ToolBarData;
 import docking.widgets.filechooser.GhidraFileChooser;
 import docking.widgets.filechooser.GhidraFileChooserMode;
 import docking.widgets.table.GTable;
+import ghidra.app.util.bin.format.pdb2.pdbreader.AbstractPdb;
 import ghidra.app.util.bin.format.pdb2.pdbreader.PdbException;
 import ghidra.app.util.bin.format.pdb2.pdbreader.PdbParser;
 import ghidra.app.util.bin.format.pdb2.pdbreader.PdbReaderOptions;
@@ -28,9 +29,13 @@ import ghidra.app.util.pdb.PdbProgramAttributes;
 import ghidra.app.util.pdb.pdbapplicator.PdbApplicator;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Program;
+import ghidra.program.model.listing.ProgramUserData;
 import ghidra.program.model.mem.MemoryAccessException;
+import ghidra.util.Msg;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.filechooser.ExtensionFileFilter;
+import ghidra.util.task.TaskLauncher;
+import ghidra.util.task.TaskMonitor;
 import ghidra.util.task.TaskMonitorAdapter;
 import net.jubjubnest.minidump.shared.ModuleData;
 import resources.Icons;
@@ -65,9 +70,10 @@ public class ModulesProvider extends ComponentProvider {
 
 	// TODO: Customize actions
 	private void createActions() {
-		action = new DockingAction("My Action", getName()) {
+		action = new DockingAction("Load Located Symbols", getName()) {
 			@Override
 			public void actionPerformed(ActionContext context) {
+				loadLocatedSymbols();
 			}
 		};
 		action.setToolBarData(new ToolBarData(Icons.ADD_ICON, null));
@@ -80,7 +86,7 @@ public class ModulesProvider extends ComponentProvider {
 			public void mouseClicked(MouseEvent e) {
 				if (e.getClickCount() == 2) {
 					if (table.getSelectedColumn() == 0) {
-						loadSymbols(table.getSelectedRow());
+						locateSymbols(table.getSelectedRow());
 					} else {
 						navigateModule(table.getSelectedRow());
 					}
@@ -91,7 +97,11 @@ public class ModulesProvider extends ComponentProvider {
 	
 	public void programActivated(Program program) {
 		this.program = program;
-		refreshModules();
+		refreshModules(true);
+	}
+	
+	public List<ModuleState> getModules() {
+		return this.table.getModules();
 	}
 
 	void navigateModule(int idx) {
@@ -101,79 +111,19 @@ public class ModulesProvider extends ComponentProvider {
 		plugin.goToService.goTo(module.baseAddress);
 	}
 	
-	void loadSymbols(int idx) {
+	void locateSymbols(int idx) {
 		var module = table.getModule(idx);
 		if (module == null)
 			return;
-
-		int tx = program.startTransaction("PDB");
-		try {
-			boolean analyzed = program.getOptions(Program.PROGRAM_INFO).getBoolean(Program.ANALYZED, false);
-			ModuleParser.PdbInfo pdbInfo = ModuleParser.getPdbInfo(program, module.baseAddress);
-			PdbProgramAttributes pdbAttributes = new PdbProgramAttributes(
-					pdbInfo.guid, Integer.toString(pdbInfo.age),
-					false, analyzed, null, pdbInfo.pdbName, "RSDS");
-			PdbLocator locator = new PdbLocator(PdbLocator.DEFAULT_SYMBOLS_DIR);
-			String pdbPath = locator.findPdb(program, pdbAttributes, true, true, TaskMonitorAdapter.DUMMY, new MessageLog(), "???");
-
-			GhidraFileChooser pdbChooser = new GhidraFileChooser(plugin.getTool().getToolFrame());
-			pdbChooser.setTitle("Select PDB file to load:");
-			pdbChooser.setApproveButtonText("Select PDB");
-			pdbChooser.setFileSelectionMode(GhidraFileChooserMode.FILES_ONLY);
-			pdbChooser.setFileFilter(new ExtensionFileFilter(new String[] { "pdb", "xml" },
-				"Program Database Files and PDB XML Representations"));
-
-			if (pdbPath != null) {
-				pdbChooser.setSelectedFile(new File(pdbPath));
-			}
-
-			File selectedPdb = pdbChooser.getSelectedFile();
-
-			var pdb = PdbParser.parse(selectedPdb.getAbsolutePath(), new PdbReaderOptions(), TaskMonitorAdapter.DUMMY);
-			pdb.deserialize(TaskMonitorAdapter.DUMMY);
-
-			PdbApplicator applicator = new PdbApplicator(selectedPdb.getAbsolutePath(), pdb);
-			applicator.applyTo(program, null, module.baseAddress, null,
-					TaskMonitorAdapter.DUMMY, new MessageLog());
-
-			program.endTransaction(tx, true);
-		} catch (IOException | CancelledException | PdbException | MemoryAccessException e) {
-			program.endTransaction(tx, false);
-			e.printStackTrace();
-		}
-		/*
-		try {
-			var locator = new PdbLocator(null);
-			var locatorAttribs = new PdbProgramAttributes
-			locator.findPdb(program,)
-			var pdb = PdbParser.parse("C:\\Users\\Rantanen\\source\\repos\\MinidumpTarget\\x64\\Release\\MinidumpTarget.pdb",
-					new PdbReaderOptions(),
-					TaskMonitorAdapter.DUMMY);
-			pdb.deserialize(TaskMonitorAdapter.DUMMY);
-			// pdb.getIdentifiers();
-			PdbApplicator applicator = new PdbApplicator(
-					"C:\\Users\\Rantanen\\source\\repos\\MinidumpTarget\\x64\\Release\\MinidumpTarget.pdb",
-					pdb);
-			applicator.applyTo(program, null, program.getImageBase().getNewAddress(0x7ff6a4930000l), null, TaskMonitorAdapter.DUMMY, new MessageLog());
-			/*
-			PdbProgramAttributes attribs = new PdbProgramAttributes(
-					"4c7a5390-6613-4653-9a75-c06d855d8ff1",
-					"2",
-					false,
-					false,
-					null,
-					"target.pdb",
-					"none.exe");
-			program.endTransaction(tx, true);
-		} catch (CancelledException | PdbException | IOException e) {
-			program.endTransaction(tx, false);
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		*/
+		
+		TaskLauncher.launch(new LocatePdbTask(program, module, this));
 	}
 	
-	private void refreshModules() {
+	protected void loadLocatedSymbols() {
+		TaskLauncher.launch(new LoadPdbsTask(program, this));
+	}
+
+	public void refreshModules(boolean reload) {
 		if (program == null) {
 			this.table.setModel(new ModulesTableModel(new ArrayList<>()));
 			return;
@@ -183,11 +133,15 @@ public class ModulesProvider extends ComponentProvider {
 		if (moduleData == null)
 			return;
 		
-		List<ModuleState> items = new ArrayList<>();
-		for (ModuleData md : moduleData) {
-			items.add(new ModuleState(program, md));
+		if (reload) {
+			List<ModuleState> items = new ArrayList<>();
+			for (ModuleData md : moduleData) {
+				items.add(new ModuleState(program, md));
+			}
+			this.table.setFrames(items, program);
+		} else {
+			this.table.repaint();
 		}
-		this.table.setFrames(items, program);
 	}
 
 	@Override

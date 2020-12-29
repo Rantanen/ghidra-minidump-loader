@@ -29,6 +29,10 @@ public class ModulesList extends GTable {
 	public ModuleState getModule(int idx) {
 		return items.get(idx);
 	}
+	
+	public List<ModuleState> getModules() {
+		return items;
+	}
 
 	@Override
 	public boolean isCellEditable(int row, int column) {

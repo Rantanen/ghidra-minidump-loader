@@ -89,9 +89,6 @@ public class ModuleData implements Saveable {
 			List<ModuleData> modules = new ArrayList<>();
 			AddressIterator iterator = objectMap.getPropertyIterator();
 			for (Address addr = iterator.next(); addr != null; addr = iterator.next()) {
-				
-				// The modules shouldn't be interleaved and the data is set at the start of the module so we'll first try the specific
-				// address but when that eventually fails we'll find the previous address that has data and trust that's the data for this module.
 				ModuleData moduleData = (ModuleData)objectMap.getObject(addr);
 				if (moduleData != null) {
 					modules.add(moduleData);
@@ -103,6 +100,11 @@ public class ModuleData implements Saveable {
 		} finally {
 			userData.endTransaction(transaction);
 		}
+	}
+
+	public static ModuleData getModuleData(ProgramUserData userData, Address address) {
+		ObjectPropertyMap objectMap = userData.getObjectProperty(ModuleData.class.getName(), USER_DATA_KEY, ModuleData.class, false);
+		return (ModuleData)objectMap.getObject(address);
 	}
 
 	public static void setModuleData(ProgramUserData userData, Address address, ModuleData data) {

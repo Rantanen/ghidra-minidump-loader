@@ -54,7 +54,6 @@ public class ThreadViewPlugin extends ProgramPlugin {
 	public ThreadViewPlugin(PluginTool tool) {
 		super(tool, true, true);
 
-		String pluginName = getName();
 		threadsProvider = new ThreadViewProvider(this, getName());
 		modulesProvider = new ModulesProvider(this, getName());
 	}
