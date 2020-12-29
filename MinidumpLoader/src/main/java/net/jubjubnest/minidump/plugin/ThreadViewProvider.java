@@ -1,13 +1,11 @@
 package net.jubjubnest.minidump.plugin;
 
 import java.awt.BorderLayout;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.JComponent;
 import javax.swing.JPanel;
@@ -17,8 +15,6 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 
-import org.apache.logging.log4j.LogManager;
-
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 
@@ -26,36 +22,18 @@ import docking.ActionContext;
 import docking.ComponentProvider;
 import docking.action.DockingAction;
 import docking.action.ToolBarData;
-import ghidra.app.services.GoToService;
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.ByteProvider;
 import ghidra.app.util.bin.MemoryByteProvider;
-import ghidra.app.util.bin.format.pdb2.pdbreader.PdbException;
-import ghidra.app.util.bin.format.pdb2.pdbreader.PdbParser;
-import ghidra.app.util.bin.format.pdb2.pdbreader.PdbReaderOptions;
-import ghidra.app.util.importer.MessageLog;
-import ghidra.app.util.pdb.PdbProgramAttributes;
-import ghidra.app.util.pdb.pdbapplicator.PdbApplicator;
 import ghidra.framework.model.DomainObjectChangedEvent;
 import ghidra.framework.model.DomainObjectListener;
-import ghidra.framework.plugintool.Plugin;
 import ghidra.program.model.address.Address;
-import ghidra.program.model.address.AddressSpace;
-import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Program;
-import ghidra.program.model.listing.ProgramFragment;
-import ghidra.program.model.listing.ProgramUserData;
-import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.util.Msg;
-import ghidra.util.exception.CancelledException;
-import ghidra.util.task.TaskMonitor;
-import ghidra.util.task.TaskMonitorAdapter;
-import net.jubjubnest.minidump.loader.MinidumpLoader;
 import net.jubjubnest.minidump.shared.ModuleData;
 import net.jubjubnest.minidump.shared.RuntimeFunction;
 import net.jubjubnest.minidump.shared.RuntimeInfo;
 import net.jubjubnest.minidump.shared.ThreadData;
-import net.jubjubnest.minidump.shared.ThreadDataList;
 import resources.Icons;
 
 // TODO: If provider is desired, it is recommended to move it to its own file
@@ -68,7 +46,7 @@ class ThreadViewProvider extends ComponentProvider implements DomainObjectListen
 	private StackList stackList;
 	private DockingAction action;
 	private Program program;
-	private ThreadDataList threadList;
+	private List<ThreadData> threadList;
 	private ArrayList<Address> offsets;
 	private ThreadViewPlugin plugin;
 	private ThreadData activeThread;
@@ -132,24 +110,18 @@ class ThreadViewProvider extends ComponentProvider implements DomainObjectListen
 
 		program = newProgram;
 		program.addListener(this);
-		
-		var userData = program.getProgramUserData();
-		var transaction = userData.startTransaction();
-		try {
-			threadList = ThreadDataList.getThreadDataList(program, userData);
-			if (threadList == null)
-				return;
-		} finally {
-			userData.endTransaction(transaction);
-		}
+	
+		threadList = ThreadData.getAllThreadData(program);
+		if (threadList == null)
+			return;
 		
 		String[] headers = { "Thread ID", "StackP.", "InstP." };
-		String[][] data = new String[threadList.threads.size()][headers.length];
-		for (int i = 0; i < threadList.threads.size(); i++) {
-			var thread = threadList.threads.get(i);
+		String[][] data = new String[threadList.size()][headers.length];
+		for (int i = 0; i < threadList.size(); i++) {
+			var thread = threadList.get(i);
 			data[i][0] = Integer.toString(thread.id);
-			data[i][1] = Long.toHexString(thread.sp);
-			data[i][2] = Long.toHexString(thread.ip);
+			data[i][1] = thread.sp.toString();
+			data[i][2] = thread.ip.toString();
 		}
 		var model = new DefaultTableModel(data, headers);
 		threadTable.setModel(model);
@@ -157,15 +129,12 @@ class ThreadViewProvider extends ComponentProvider implements DomainObjectListen
 	}
 	
 	public void threadActivated(int threadIdx) {
-		activeThread = threadList.threads.get(threadIdx);
+		activeThread = threadList.get(threadIdx);
 		refreshStack();
 	}
 	
 	private void refreshStack() {
 		var frames = new ArrayList<StackFrame>();
-
-		var af = program.getAddressFactory();
-		var space = af.getDefaultAddressSpace();
 
 		// Set up a pointer-sized byte buffer for re-using when reading addresses.
 		var pointerSize = program.getLanguage().getLanguageDescription().getSize();
@@ -174,10 +143,8 @@ class ThreadViewProvider extends ComponentProvider implements DomainObjectListen
 		buffer.order(ByteOrder.LITTLE_ENDIAN);
 
 		// Thread info will give us the top-of-the-stack register values so we'll start with those.
-		var addrIp = space.getAddress(activeThread.ip);
-		var addrSp = space.getAddress(activeThread.sp);
 		try {
-			var firstFrame = getCaller(addrSp, addrIp, buffer);
+			var firstFrame = getCaller(activeThread.sp, activeThread.ip, buffer);
 			while (firstFrame != null) {
 				frames.add(firstFrame);
 				
@@ -246,10 +213,10 @@ class ThreadViewProvider extends ComponentProvider implements DomainObjectListen
 	
 	RuntimeFunction getRuntimeFunction(Address instructionPtr, ModuleData moduleData, ByteProvider memoryProvider) throws IOException {
 
-		Address moduleBaseAddress = instructionPtr.getNewAddress(moduleData.baseAddress);
+		Address moduleBaseAddress = moduleData.baseAddress;
 		BinaryReader reader = new BinaryReader(memoryProvider, true);
-		reader.setPointerIndex(moduleData.rtiStartAddress);
-		for (;reader.getPointerIndex() < moduleData.rtiEndAddress;) {
+		reader.setPointerIndex(moduleData.rtiStartAddress.getOffset());
+		for (;reader.getPointerIndex() < moduleData.rtiEndAddress.getOffset();) {
 			
 			RuntimeFunction rf = RuntimeFunction.parse(moduleBaseAddress, reader);
 

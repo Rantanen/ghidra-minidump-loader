@@ -1,13 +1,10 @@
 package net.jubjubnest.minidump.shared;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 
 import ghidra.app.util.bin.BinaryReader;
-import ghidra.app.util.bin.ByteProvider;
 import ghidra.program.model.address.Address;
 
 public class RuntimeInfo {

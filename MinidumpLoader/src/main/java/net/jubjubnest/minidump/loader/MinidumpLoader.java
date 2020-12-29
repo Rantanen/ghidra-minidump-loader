@@ -16,8 +16,6 @@
 package net.jubjubnest.minidump.loader;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -42,18 +40,16 @@ import ghidra.program.model.listing.DuplicateGroupException;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.listing.ProgramFragment;
 import ghidra.program.model.listing.ProgramModule;
-import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.util.Msg;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.exception.DuplicateNameException;
-import ghidra.util.exception.InvalidInputException;
 import ghidra.util.exception.NotEmptyException;
 import ghidra.util.exception.NotFoundException;
 import ghidra.util.task.TaskMonitor;
+import net.jubjubnest.minidump.contrib.new_.ModuleBaseMap;
 import net.jubjubnest.minidump.contrib.opinion.PeLoader;
 import net.jubjubnest.minidump.contrib.pe.DataDirectory;
 import net.jubjubnest.minidump.contrib.pe.ExceptionDataDirectory;
-import net.jubjubnest.minidump.contrib.pe.ImportDataDirectory;
 import net.jubjubnest.minidump.contrib.pe.NTHeader;
 import net.jubjubnest.minidump.contrib.pe.OptionalHeader;
 import net.jubjubnest.minidump.contrib.pe.PortableExecutable;
@@ -72,7 +68,6 @@ import net.jubjubnest.minidump.loader.parser.ThreadList;
 import net.jubjubnest.minidump.shared.ImageLoadInfo;
 import net.jubjubnest.minidump.shared.ModuleData;
 import net.jubjubnest.minidump.shared.ThreadData;
-import net.jubjubnest.minidump.shared.ThreadDataList;
 
 /**
  * Loads Windows Minidump files into Ghidra
@@ -274,6 +269,10 @@ public class MinidumpLoader extends AbstractLibrarySupportLoader {
 		if (monitor.isCancelled())
 			return null;
 		
+		Address moduleStart = program.getImageBase().getNewAddress(module.imageBase);
+		Address moduleEnd = moduleStart.add(module.imageSize - 1);
+		ModuleBaseMap.markModule(program, moduleStart, moduleEnd);
+		
 		// Move the sections to the module folder.
 		var baseAddr = module.imageBase;
 		AddressFactory af = program.getAddressFactory();
@@ -294,23 +293,22 @@ public class MinidumpLoader extends AbstractLibrarySupportLoader {
 		return result;
 	}
 	
-	private void storeRuntimeInfoAddress(PeImageData data, Program program) {
+	private void storeModuleData(PeImageData data, Program program) {
 
+		AddressFactory af = program.getAddressFactory();
+		AddressSpace space = af.getDefaultAddressSpace();
+		
 		var image = data.info;
 		var baseAddr = data.module.imageBase;
-		var baseAddress = program.getAddressFactory().getDefaultAddressSpace().getAddress(baseAddr);
 		
-		var userData = program.getProgramUserData();
-		var transaction = userData.startTransaction();
-		try {
-			var rti = getRuntimeInfoAddress(baseAddr, image.pe);
-			if (rti == null)
-				return;
-			var moduleData = new ModuleData(data.module.getBaseName(), baseAddr, rti.start, rti.end);
-			ModuleData.setModuleData(userData, baseAddress, moduleData);
-		} finally {
-			userData.endTransaction(transaction);
-		}
+		var rti = getRuntimeInfoAddress(baseAddr, image.pe);
+		if (rti == null)
+			return;
+		var moduleData = new ModuleData(data.module.getBaseName(),
+				space.getAddress(baseAddr),
+				space.getAddress(rti.start),
+				space.getAddress(rti.end));
+		ModuleData.setModuleData(program, moduleData);
 	}
 	
 	class AddressRange { long start; long end; }
@@ -348,7 +346,7 @@ public class MinidumpLoader extends AbstractLibrarySupportLoader {
 			throws IOException {
 		
 		image.loader.processImage(image.peBytes, image.info, new ArrayList<>(), program, monitor, log);
-		storeRuntimeInfoAddress(image, program);
+		storeModuleData(image, program);
 	}
 	
 	private void loadThreads(ByteProvider provider, ByteProvider memoryProvider, LoadSpec loadSpec, LocationDescriptor location,
@@ -359,21 +357,21 @@ public class MinidumpLoader extends AbstractLibrarySupportLoader {
 		AddressFactory af = program.getAddressFactory();
 		AddressSpace space = af.getDefaultAddressSpace();
 		
-		var threadDataList = new ThreadDataList();
 		var threadList = ThreadList.parse(location.offset, provider);
 		for (var thread : threadList.threads) {
 			var tib = ThreadInformationBlock.parse(loadSpec, thread.teb, memoryProvider);
 			
 			var ctx = ContextX64.parse(thread.threadContext.offset, provider);
 			
-			var threadData = new ThreadData();
-			threadData.id = thread.threadId;
-			threadData.stackBase = tib.stackBase - 1;
-			threadData.stackLimit = tib.stackLimit;
-			threadData.stackPointer = thread.stack.startOfMemoryRange;
-			threadData.sp = ctx.rsp;
-			threadData.ip = ctx.rip;
-			threadDataList.threads.add(threadData);
+			var threadData = new ThreadData(
+				thread.threadId,
+				space.getAddress(tib.stackBase - 1),
+				space.getAddress(tib.stackLimit),
+				space.getAddress(thread.stack.startOfMemoryRange),
+				space.getAddress(ctx.rsp),
+				space.getAddress(ctx.rip)
+			);
+			ThreadData.storeThreadData(program, threadData);
 			
 			var listing = program.getListing();
 			var root = listing.getDefaultRootModule();
@@ -392,14 +390,6 @@ public class MinidumpLoader extends AbstractLibrarySupportLoader {
 			} catch (AddressOutOfBoundsException | NotFoundException e) {
 				Msg.warn(this, String.format("Stack for thread %s was not part of the dump.", thread.threadId));
 			}
-		}
-		
-		var userData = program.getProgramUserData();
-		var transaction = userData.startTransaction();
-		try {
-			ThreadDataList.setThreadDataList(program, userData, threadDataList);
-		} finally {
-			userData.endTransaction(transaction);
 		}
 	}
 

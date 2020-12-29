@@ -9,7 +9,6 @@ import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.DataTypeManager;
 import ghidra.program.model.mem.MemBuffer;
 import ghidra.program.model.scalar.Scalar;
-import net.jubjubnest.minidump.shared.ModuleData;
 
 abstract class AbstractModuleBaseOffsetDataType extends BuiltIn {
 	
@@ -63,7 +62,7 @@ abstract class AbstractModuleBaseOffsetDataType extends BuiltIn {
 
 	@Override
 	public Object getValue(MemBuffer buf, Settings settings, int length) {
-		Address moduleBase = ModuleData.getContainingModuleBase(buf.getMemory().getProgram(), buf.getAddress());
+		Address moduleBase = ModuleBaseMap.getModuleBase(buf.getMemory().getProgram(), buf.getAddress());
 		if (moduleBase == null) {
 			return null;
 		}

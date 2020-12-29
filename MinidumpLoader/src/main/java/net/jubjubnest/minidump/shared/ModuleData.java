@@ -6,22 +6,21 @@ import java.util.List;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressIterator;
 import ghidra.program.model.listing.Program;
-import ghidra.program.model.listing.ProgramUserData;
 import ghidra.program.model.util.ObjectPropertyMap;
 import ghidra.util.ObjectStorage;
 import ghidra.util.Saveable;
 
-public class ModuleData implements Saveable {
+public class ModuleData {
 	
-	static private final String USER_DATA_KEY = "MODULE_DATA";
+	static private final String OBJECT_MAP_KEY = "MODULE_DATA";
 	
 	public String name;
 	public String loadedSymbols;
-	public long baseAddress;
-	public long rtiStartAddress;
-	public long rtiEndAddress;
+	public Address baseAddress;
+	public Address rtiStartAddress;
+	public Address rtiEndAddress;
 	
-	public ModuleData(String name, long baseAddress, long rtiStart, long rtiEnd) {
+	public ModuleData(String name, Address baseAddress, Address rtiStart, Address rtiEnd) {
 		this.name = name;
 		this.loadedSymbols = null;
 		this.baseAddress = baseAddress;
@@ -29,138 +28,130 @@ public class ModuleData implements Saveable {
 		this.rtiEndAddress = rtiEnd;
 	}
 	
-	public ModuleData() {}
+	private ModuleData(Program program, Record record) {
+		this.name = record.name;
+		this.loadedSymbols = record.loadedSymbols;
+		this.baseAddress = program.getImageBase().getNewAddress(record.baseAddress);
+		this.rtiStartAddress = baseAddress.getNewAddress(record.rtiStartAddress);
+		this.rtiEndAddress = baseAddress.getNewAddress(record.rtiEndAddress);
+	}
 	
-	public static Address getContainingModuleBase(Program program, Address address) {
-		ProgramUserData userData = program.getProgramUserData();
-		int transaction = userData.startTransaction();
-		try {
-
-			ObjectPropertyMap objectMap = userData.getObjectProperty(ModuleData.class.getName(), USER_DATA_KEY, ModuleData.class, false);
-			if (objectMap == null)
-				return null;
-			
-			AddressIterator iterator = objectMap.getPropertyIterator(program.getMinAddress(), address, false);
-			return iterator.next();
-
-		} finally {
-			userData.endTransaction(transaction);
-		}
-	}
-
 	public static ModuleData getContainingModuleData(Program program, Address address) {
-		ProgramUserData userData = program.getProgramUserData();
-		int transaction = userData.startTransaction();
-		try {
-			return getContainingModuleData(userData, address);
-		} finally {
-			userData.endTransaction(transaction);
-		}
-	}
-
-	public static ModuleData getContainingModuleData(ProgramUserData userData, Address address) {
-		ObjectPropertyMap objectMap = userData.getObjectProperty(ModuleData.class.getName(), USER_DATA_KEY, ModuleData.class, false);
+		ObjectPropertyMap objectMap = getModuleDataMap(program,  false);
 		if (objectMap == null)
 			return null;
 		
 		// The modules shouldn't be interleaved and the data is set at the start of the module so we'll first try the specific
 		// address but when that eventually fails we'll find the previous address that has data and trust that's the data for this module.
-		ModuleData moduleData = (ModuleData)objectMap.getObject(address);
-		if (moduleData != null) {
-			return moduleData;
+		Record record = (Record)objectMap.getObject(address);
+		if (record == null) {
+			Address previousAddress = objectMap.getPreviousPropertyAddress(address);
+			if (previousAddress == null) {
+				return null;
+			}
+
+			record = (Record)objectMap.getObject(previousAddress);
 		}
 
-		Address previousAddress = objectMap.getPreviousPropertyAddress(address);
-		if (previousAddress == null) {
-			return null;
-		}
+		return new ModuleData(program, record);
 
-		return (ModuleData)objectMap.getObject(previousAddress);
 	}
 	
 	public static List<ModuleData> getAllModules(Program program) {
-		ProgramUserData userData = program.getProgramUserData();
-		int transaction = userData.startTransaction();
-		try {
-			ObjectPropertyMap objectMap = userData.getObjectProperty(ModuleData.class.getName(), USER_DATA_KEY, ModuleData.class, false);
-			if (objectMap == null)
-				return null;
-			
-			List<ModuleData> modules = new ArrayList<>();
-			AddressIterator iterator = objectMap.getPropertyIterator();
-			for (Address addr = iterator.next(); addr != null; addr = iterator.next()) {
-				ModuleData moduleData = (ModuleData)objectMap.getObject(addr);
-				if (moduleData != null) {
-					modules.add(moduleData);
-				}
-			}
-
-			return modules;
-
-		} finally {
-			userData.endTransaction(transaction);
-		}
-	}
-
-	public static ModuleData getModuleData(ProgramUserData userData, Address address) {
-		ObjectPropertyMap objectMap = userData.getObjectProperty(ModuleData.class.getName(), USER_DATA_KEY, ModuleData.class, false);
-		return (ModuleData)objectMap.getObject(address);
-	}
-
-	public static void setModuleData(ProgramUserData userData, Address address, ModuleData data) {
-		if (address.getOffset() != data.baseAddress)
-			throw new IllegalArgumentException("Address mismatch");
+		ObjectPropertyMap objectMap = getModuleDataMap(program, false);
+		if (objectMap == null)
+			return null;
 		
-		ObjectPropertyMap objectMap = userData.getObjectProperty(ModuleData.class.getName(), USER_DATA_KEY, ModuleData.class, true);
-		objectMap.add(address, data);
+		List<ModuleData> modules = new ArrayList<>();
+		AddressIterator iterator = objectMap.getPropertyIterator();
+		for (Address addr = iterator.next(); addr != null; addr = iterator.next()) {
+			ModuleData moduleData = new ModuleData(program, (Record)objectMap.getObject(addr));
+			modules.add(moduleData);
+		}
+
+		return modules;
+	}
+	
+	public static ModuleData getModuleData(Program program, Address address) {
+		ObjectPropertyMap objectMap = getModuleDataMap(program, false);
+		Record record = (Record)objectMap.getObject(address);
+		return record == null ? null : new ModuleData(program, record);
 	}
 
-	@Override
-	public Class<?>[] getObjectStorageFields() {
-		return new Class[] {
-			String.class,
-			String.class,
-			long.class,
-			long.class,
-			long.class,
-		};
+	public static void setModuleData(Program program, ModuleData data) {
+		ObjectPropertyMap objectMap = getModuleDataMap(program, true);
+		objectMap.add(data.baseAddress, new Record(data));
 	}
 
-	@Override
-	public void save(ObjectStorage objStorage) {
-		objStorage.putString(name);
-		objStorage.putString(loadedSymbols);
-		objStorage.putLong(baseAddress);
-		objStorage.putLong(rtiStartAddress);
-		objStorage.putLong(rtiEndAddress);
+	private static ObjectPropertyMap getModuleDataMap(Program program, boolean create) {
+		return ObjectMapResolver.getModuleDataMap(program, OBJECT_MAP_KEY, Record.class, create);
 	}
+	
+	public static class Record implements Saveable {
+		
+		private String name;
+		private String loadedSymbols;
+		private long baseAddress;
+		private long rtiStartAddress;
+		private long rtiEndAddress;
+		
+		public Record(ModuleData data) {
+			this.name = data.name;
+			this.loadedSymbols = data.loadedSymbols;
+			this.baseAddress = data.baseAddress.getOffset();
+			this.rtiStartAddress = data.rtiStartAddress.getOffset();
+			this.rtiEndAddress = data.rtiEndAddress.getOffset();
+		}
+		
+		public Record() {}
 
-	@Override
-	public void restore(ObjectStorage objStorage) {
-		name = objStorage.getString();
-		loadedSymbols = objStorage.getString();
-		baseAddress = objStorage.getLong();
-		rtiStartAddress = objStorage.getLong();
-		rtiEndAddress = objStorage.getLong();
-	}
+		@Override
+		public Class<?>[] getObjectStorageFields() {
+			return new Class[] {
+				String.class,
+				String.class,
+				long.class,
+				long.class,
+				long.class,
+			};
+		}
 
-	@Override
-	public int getSchemaVersion() {
-		return 0;
-	}
+		@Override
+		public void save(ObjectStorage objStorage) {
+			objStorage.putString(name);
+			objStorage.putString(loadedSymbols);
+			objStorage.putLong(baseAddress);
+			objStorage.putLong(rtiStartAddress);
+			objStorage.putLong(rtiEndAddress);
+		}
 
-	@Override
-	public boolean isUpgradeable(int oldSchemaVersion) {
-		return false;
-	}
+		@Override
+		public void restore(ObjectStorage objStorage) {
+			name = objStorage.getString();
+			loadedSymbols = objStorage.getString();
+			baseAddress = objStorage.getLong();
+			rtiStartAddress = objStorage.getLong();
+			rtiEndAddress = objStorage.getLong();
+		}
 
-	@Override
-	public boolean upgrade(ObjectStorage oldObjStorage, int oldSchemaVersion, ObjectStorage currentObjStorage) {
-		return false;
-	}
+		@Override
+		public int getSchemaVersion() {
+			return 0;
+		}
 
-	@Override
-	public boolean isPrivate() {
-		return false;
+		@Override
+		public boolean isUpgradeable(int oldSchemaVersion) {
+			return false;
+		}
+
+		@Override
+		public boolean upgrade(ObjectStorage oldObjStorage, int oldSchemaVersion, ObjectStorage currentObjStorage) {
+			return false;
+		}
+
+		@Override
+		public boolean isPrivate() {
+			return false;
+		}
 	}
 }

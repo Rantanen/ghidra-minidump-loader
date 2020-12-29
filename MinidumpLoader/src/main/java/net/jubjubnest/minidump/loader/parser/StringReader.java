@@ -16,7 +16,6 @@ public class StringReader {
 		var size = byteBuffer.getInt();
 		if (size % 2 == 1)
 			throw new IOException("Invalid string data");
-		var length = size / 2;
 
 		var dataBytes = provider.readBytes(offset + 4, size);
 		var charset = Charset.forName("UTF-16LE");

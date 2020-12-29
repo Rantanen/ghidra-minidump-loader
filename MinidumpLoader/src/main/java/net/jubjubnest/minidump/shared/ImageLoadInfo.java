@@ -1,6 +1,5 @@
 package net.jubjubnest.minidump.shared;
 
-import ghidra.program.model.listing.Program;
 import net.jubjubnest.minidump.contrib.pe.PortableExecutable.SectionLayout;
 
 public class ImageLoadInfo {
@@ -24,8 +23,12 @@ public class ImageLoadInfo {
 	}
 	
 	public String prefixName(String name) {
+		return name;
+		
+		/*
 		if (sharedProgram == false)
 			return name;
 		return imageName.toUpperCase() + "::" + name;
+		*/
 	}
 }

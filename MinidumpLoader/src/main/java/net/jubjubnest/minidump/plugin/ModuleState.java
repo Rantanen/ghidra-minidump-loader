@@ -16,6 +16,6 @@ public class ModuleState {
 		this.name = data.name;
 		this.symbolPath = data.loadedSymbols;
 		this.symbolsLoaded = data.loadedSymbols != null;
-		this.baseAddress = program.getImageBase().getNewAddress(data.baseAddress);
+		this.baseAddress = data.baseAddress;
 	}
 }

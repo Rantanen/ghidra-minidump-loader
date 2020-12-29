@@ -4,12 +4,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import ghidra.program.model.address.Address;
-import ghidra.program.model.lang.Endian;
-import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Program;
-import ghidra.program.model.listing.ProgramFragment;
 import ghidra.program.model.mem.MemoryAccessException;
-import ghidra.util.exception.NotYetImplementedException;
 
 class StackFrame {
 	Address stackPointer;

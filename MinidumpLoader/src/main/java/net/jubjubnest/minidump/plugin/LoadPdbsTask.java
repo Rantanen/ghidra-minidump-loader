@@ -92,12 +92,9 @@ public class LoadPdbsTask extends Task {
 					TaskMonitor.DUMMY, new MessageLog());
 
 			monitor.setMessage("Committing " + pdbFile.getName() + "...");
-			ProgramUserData pud = program.getProgramUserData();
-			int pudTx = pud.startTransaction();
-			ModuleData moduleData = ModuleData.getModuleData(pud, module.baseAddress);
+			ModuleData moduleData = ModuleData.getModuleData(program, module.baseAddress);
 			moduleData.loadedSymbols = pdbFile.getAbsolutePath();
-			ModuleData.setModuleData(pud, module.baseAddress, moduleData);
-			pud.endTransaction(pudTx);
+			ModuleData.setModuleData(program, moduleData);
 
 			program.endTransaction(tx, true);
 
