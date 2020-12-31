@@ -2,7 +2,6 @@ package net.jubjubnest.minidump.plugin;
 
 import java.util.List;
 
-import javax.swing.JButton;
 import javax.swing.table.AbstractTableModel;
 
 import ghidra.util.exception.NotYetImplementedException;

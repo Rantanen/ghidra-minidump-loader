@@ -2,7 +2,6 @@ package net.jubjubnest.minidump.analyzer;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 
 import docking.widgets.filechooser.GhidraFileChooser;
 import docking.widgets.filechooser.GhidraFileChooserMode;
@@ -18,7 +17,6 @@ import ghidra.app.util.pdb.pdbapplicator.PdbApplicatorOptions;
 import ghidra.framework.options.Options;
 import ghidra.program.model.address.AddressSetView;
 import ghidra.program.model.listing.Program;
-import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.util.SystemUtilities;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.filechooser.ExtensionFileFilter;
@@ -86,7 +84,7 @@ public class ModulePdbAnalyzer extends AbstractAnalyzer {
 			if (pdbAttributes == null) {
 				return null;
 			}
-		} catch (MemoryAccessException | IOException e) {
+		} catch (IOException e) {
 			log.appendMsg(getName(), "Exception parsing PDB information from the module: " + md.name);
 			log.appendException(e);
 			return null;
@@ -98,7 +96,7 @@ public class ModulePdbAnalyzer extends AbstractAnalyzer {
 			if (result != null) {
 				return result;
 			}
-		} catch (MemoryAccessException | IOException | PdbException e) {
+		} catch (IOException | PdbException e) {
 			log.appendMsg(getName(), "Error locating PDB for " + md.name);
 			log.appendException(e);
 		}

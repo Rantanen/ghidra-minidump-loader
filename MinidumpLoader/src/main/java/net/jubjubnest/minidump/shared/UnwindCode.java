@@ -2,11 +2,7 @@ package net.jubjubnest.minidump.shared;
 
 import java.io.IOException;
 
-import org.junit.internal.matchers.ThrowableCauseMatcher;
-
 import ghidra.app.util.bin.BinaryReader;
-import ghidra.app.util.bin.ByteProvider;
-import ghidra.util.Msg;
 import ghidra.util.exception.NotYetImplementedException;
 
 public class UnwindCode {
@@ -41,7 +37,7 @@ public class UnwindCode {
 			}
 			break;
 		case 2:
-			// UWPO_ALLOW_SMALL
+			// UWPO_ALLOC_SMALL
 			code.spEffect = opinfo * 8 + 8;
 			code.opcodeSize = 1;
 			break;
@@ -51,8 +47,6 @@ public class UnwindCode {
 			break;
 		case 4:
 			// Save register into previously allocated stack space.
-			var os = reader.readNextByte() + (reader.readNextByte() << 8);
-			os *= 8;
 			code.spEffect = 0;
 			code.opcodeSize = 2;
 			break;

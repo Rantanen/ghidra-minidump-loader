@@ -1,17 +1,12 @@
 package net.jubjubnest.minidump.plugin;
 
-import java.awt.Font;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
 
-import javax.swing.JTable;
-import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 
 import docking.widgets.table.GTable;
-import ghidra.framework.model.DomainObjectChangedEvent;
-import ghidra.framework.model.DomainObjectListener;
 import ghidra.program.model.listing.Program;
 
 public class StackList extends GTable {

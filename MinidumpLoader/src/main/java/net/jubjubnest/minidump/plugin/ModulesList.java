@@ -1,22 +1,16 @@
 package net.jubjubnest.minidump.plugin;
 
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.util.List;
-
-import javax.swing.table.TableColumnModel;
 
 import docking.widgets.table.GTable;
 import ghidra.program.model.listing.Program;
 
 public class ModulesList extends GTable {
 	
-	private ThreadViewPlugin plugin;
 	private List<ModuleState> items;
 	private ModulesTableModel model;
 	
-	public ModulesList(ThreadViewPlugin plugin) {
-		this.plugin = plugin;
+	public ModulesList() {
 	}
 	
 	public void setFrames(List<ModuleState> items, Program program) {

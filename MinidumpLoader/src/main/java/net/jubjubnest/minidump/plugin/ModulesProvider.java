@@ -19,7 +19,6 @@ import ghidra.framework.model.DomainObjectListener;
 import ghidra.program.model.listing.Program;
 import ghidra.program.util.ChangeManager;
 import ghidra.program.util.CodeUnitPropertyChangeRecord;
-import ghidra.util.task.TaskLauncher;
 import net.jubjubnest.minidump.shared.ModuleData;
 import resources.Icons;
 
@@ -44,7 +43,7 @@ public class ModulesProvider extends ComponentProvider implements DomainObjectLi
 	// Customize GUI
 	private void buildPanel() {
 
-		table = new ModulesList(this.plugin);
+		table = new ModulesList();
 
 		panel = new JPanel(new BorderLayout());
 		panel.add(table);

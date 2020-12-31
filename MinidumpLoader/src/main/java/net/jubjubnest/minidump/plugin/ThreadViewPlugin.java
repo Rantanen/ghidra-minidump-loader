@@ -15,8 +15,6 @@
  */
 package net.jubjubnest.minidump.plugin;
 
-import javax.swing.*;
-
 import ghidra.app.ExamplesPluginPackage;
 import ghidra.app.events.ProgramActivatedPluginEvent;
 import ghidra.app.plugin.PluginCategoryNames;
@@ -25,7 +23,6 @@ import ghidra.app.services.GoToService;
 import ghidra.framework.plugintool.*;
 import ghidra.framework.plugintool.util.PluginStatus;
 import ghidra.program.model.listing.Program;
-import ghidra.util.HelpLocation;
 
 /**
  * TODO: Provide class-level documentation that describes what this plugin does.

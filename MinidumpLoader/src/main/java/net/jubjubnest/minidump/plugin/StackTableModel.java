@@ -1,14 +1,12 @@
 package net.jubjubnest.minidump.plugin;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import javax.swing.table.AbstractTableModel;
 
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Program;
-
 
 class StackTableModel extends AbstractTableModel {
 	

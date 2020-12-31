@@ -15,15 +15,13 @@ import ghidra.app.util.pdb.PdbProgramAttributes;
 import ghidra.net.http.HttpUtil;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Program;
-import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.exception.NotYetImplementedException;
 import ghidra.util.task.TaskMonitor;
-import net.jubjubnest.minidump.shared.ModuleData;
 
 public class PdbResolver {
 
-	public static PdbProgramAttributes getAttributes(Program program, Address moduleBase) throws MemoryAccessException, IOException {
+	public static PdbProgramAttributes getAttributes(Program program, Address moduleBase) throws IOException {
 
 		boolean analyzed = program.getOptions(Program.PROGRAM_INFO).getBoolean(Program.ANALYZED, false);
 		ModuleParser.PdbInfo pdbInfo = ModuleParser.getPdbInfo(program, moduleBase);
@@ -44,7 +42,7 @@ public class PdbResolver {
 	}
 
 	public static PdbResult locatePdb(PdbProgramAttributes pdbAttributes, TaskMonitor monitor)
-			throws MemoryAccessException, IOException, CancelledException, PdbException {
+			throws IOException, CancelledException, PdbException {
 
 		if (pdbAttributes.getPdbFile() != null) {
 			File candidate = new File(pdbAttributes.getPdbFile());

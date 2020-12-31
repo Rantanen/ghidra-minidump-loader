@@ -2,7 +2,6 @@ package net.jubjubnest.minidump.plugin;
 
 import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Program;
-import ghidra.program.model.listing.ProgramUserData;
 import net.jubjubnest.minidump.shared.ModuleData;
 
 public class ModuleState {

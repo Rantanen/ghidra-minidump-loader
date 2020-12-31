@@ -8,7 +8,6 @@ import ghidra.app.util.bin.MemoryByteProvider;
 import ghidra.app.util.datatype.microsoft.GuidUtil;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Program;
-import ghidra.program.model.mem.MemoryAccessException;
 
 public class ModuleParser {
 	public static class PdbInfo {
@@ -17,7 +16,7 @@ public class ModuleParser {
 		String pdbName;
 	}
 	
-	public static PdbInfo getPdbInfo(Program program, Address moduleBase) throws MemoryAccessException, IOException {
+	public static PdbInfo getPdbInfo(Program program, Address moduleBase) throws IOException {
 		Address codeviewAddress = optionalHeader(program, moduleBase);
 		if (codeviewAddress == null) {
 			return null;
