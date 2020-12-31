@@ -47,31 +47,39 @@ public class UnwindCode {
 			break;
 		case 4:
 			// Save register into previously allocated stack space.
+			reader.readNextShort();
 			code.spEffect = 0;
 			code.opcodeSize = 2;
 			break;
 		case 5:
 			// Save register into previously allocated stack space.
+			reader.readNextShort();
+			reader.readNextShort();
 			code.spEffect = 0;
 			code.opcodeSize = 3;
 			break;
 		case 6:
 			// Save register into previously allocated stack space.
+			reader.readNextShort();
 			code.spEffect = 0;
 			code.opcodeSize = 2;
 			break;
 		case 7:
 			// Save register into previously allocated stack space.
+			reader.readNextShort();
 			code.spEffect = 0;
 			code.opcodeSize = 3;
 			break;
 		case 8:
 			// Save register into previously allocated stack space.
+			reader.readNextShort();
 			code.spEffect = 0;
 			code.opcodeSize = 2;
 			break;
 		case 9:
 			// Save register into previously allocated stack space.
+			reader.readNextShort();
+			reader.readNextShort();
 			code.spEffect = 0;
 			code.opcodeSize = 3;
 			break;
