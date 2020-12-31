@@ -10,7 +10,6 @@ import java.util.List;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
 import javax.swing.event.ListSelectionEvent;
@@ -20,10 +19,8 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 
-import docking.ActionContext;
 import docking.ComponentProvider;
-import docking.action.DockingAction;
-import docking.action.ToolBarData;
+import docking.widgets.table.GTable;
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.ByteProvider;
 import ghidra.app.util.bin.MemoryByteProvider;
@@ -36,7 +33,6 @@ import net.jubjubnest.minidump.shared.ModuleData;
 import net.jubjubnest.minidump.shared.RuntimeFunction;
 import net.jubjubnest.minidump.shared.RuntimeInfo;
 import net.jubjubnest.minidump.shared.ThreadData;
-import resources.Icons;
 
 // TODO: If provider is desired, it is recommended to move it to its own file
 class ThreadViewProvider extends ComponentProvider implements DomainObjectListener {
@@ -44,7 +40,7 @@ class ThreadViewProvider extends ComponentProvider implements DomainObjectListen
 	public static final String NAME = "Memory Dump Threads";
 
 	private JPanel panel;
-	private JTable threadTable;
+	private GTable threadTable;
 	private StackList stackList;
 	private Program program;
 	private List<ThreadData> threadList;
@@ -62,7 +58,7 @@ class ThreadViewProvider extends ComponentProvider implements DomainObjectListen
 	// Customize GUI
 	private void buildPanel() {
 
-		threadTable = new JTable() {
+		threadTable = new GTable() {
 			@Override
 			public boolean isCellEditable(int row, int column) {
 				return false;
