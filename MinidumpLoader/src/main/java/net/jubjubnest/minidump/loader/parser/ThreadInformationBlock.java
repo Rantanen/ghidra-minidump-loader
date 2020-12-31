@@ -8,6 +8,9 @@ import ghidra.app.util.bin.ByteProvider;
 import ghidra.app.util.opinion.LoadSpec;
 import ghidra.program.model.lang.LanguageNotFoundException;
 
+/**
+ * Windows TIB
+ */
 public class ThreadInformationBlock {
 
 	public static final int RECORD_SIZE = 8 + 8 + 8;

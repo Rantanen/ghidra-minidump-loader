@@ -6,23 +6,23 @@ import java.nio.ByteOrder;
 
 import ghidra.app.util.bin.ByteProvider;
 
-public class Header {
+public class MinidumpHeader {
 	public static final long RECORD_SIZE = 4 + 2 + 2 + 4 + 4 + 4 + 4 + 8;
 
-	public static Header parse(long offset, ByteProvider provider) throws IOException {
+	public static MinidumpHeader parse(long offset, ByteProvider provider) throws IOException {
 		var bytes = provider.readBytes(offset, RECORD_SIZE);
 		var byteBuffer = ByteBuffer.wrap(bytes);
 		byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
 		return parse(byteBuffer);
 	}
 
-	public static Header parse(ByteBuffer byteBuffer) {
+	public static MinidumpHeader parse(ByteBuffer byteBuffer) {
 		@SuppressWarnings("unused")
 		int _signature = byteBuffer.getInt();
 		@SuppressWarnings("unused")
 		short _internalVersion = byteBuffer.getShort();
 
-		var header = new Header();
+		var header = new MinidumpHeader();
 		header.version = byteBuffer.getShort();
 		header.streamsCount = byteBuffer.getInt();
 		header.streamsOffset = byteBuffer.getInt();

@@ -8,22 +8,22 @@ import java.util.List;
 
 import ghidra.app.util.bin.ByteProvider;
 
-public class MemoryInfoList {
+public class MinidumpMemoryInfoList {
 
 	// Memory info list doesn't have fixed size, instead it carries size information
 	// as part of the data.
 
-	public static MemoryInfoList parse(long offset, ByteProvider provider) throws IOException {
+	public static MinidumpMemoryInfoList parse(long offset, ByteProvider provider) throws IOException {
 		var bytes = provider.readBytes(offset, 4 + 4 + 8);
 		var byteBuffer = ByteBuffer.wrap(bytes);
 		byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
 
-		var list = new MemoryInfoList();
+		var list = new MinidumpMemoryInfoList();
 		list.headerSize = byteBuffer.getInt();
 		list.entrySize = byteBuffer.getInt();
 		list.entryCount = byteBuffer.getLong();
 
-		list.descriptors = new ArrayList<MemoryInfo>((int) list.entryCount);
+		list.descriptors = new ArrayList<MinidumpMemoryInfo>((int) list.entryCount);
 		long entriesStart = offset + list.headerSize;
 		for (int i = 0; i < list.entryCount; i++) {
 
@@ -31,7 +31,7 @@ public class MemoryInfoList {
 			var segmentBuffer = ByteBuffer.wrap(segmentBytes);
 			segmentBuffer.order(ByteOrder.LITTLE_ENDIAN);
 
-			list.descriptors.add(MemoryInfo.parse(segmentBuffer));
+			list.descriptors.add(MinidumpMemoryInfo.parse(segmentBuffer));
 		}
 
 		return list;
@@ -41,5 +41,5 @@ public class MemoryInfoList {
 	public int entrySize;
 	public long entryCount;
 
-	public List<MemoryInfo> descriptors;
+	public List<MinidumpMemoryInfo> descriptors;
 }

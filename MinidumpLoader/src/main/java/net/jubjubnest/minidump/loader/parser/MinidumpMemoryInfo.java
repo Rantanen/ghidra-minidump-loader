@@ -2,13 +2,13 @@ package net.jubjubnest.minidump.loader.parser;
 
 import java.nio.ByteBuffer;
 
-public class MemoryInfo {
+public class MinidumpMemoryInfo {
 
 	// Memory info doesn't have definite record size, instead the module info struct
 	// specifies the size of the entries.
 
-	public static MemoryInfo parse(ByteBuffer byteBuffer) {
-		var module = new MemoryInfo();
+	public static MinidumpMemoryInfo parse(ByteBuffer byteBuffer) {
+		var module = new MinidumpMemoryInfo();
 
 		module.baseAddress = byteBuffer.getLong();
 		module.allocationBase = byteBuffer.getLong();

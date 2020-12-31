@@ -6,19 +6,24 @@ import java.nio.ByteOrder;
 
 import ghidra.app.util.bin.ByteProvider;
 
-public class FixedFileInfo {
+/**
+ * VS_FIXEDFILEINFO
+ * 
+ * https://docs.microsoft.com/en-us/windows/win32/api/verrsrc/ns-verrsrc-vs_fixedfileinfo
+ */
+public class VsFixedFileInfo {
 
 	public static final int RECORD_SIZE = 4 + 4 + 8 + 8 + 4 + 4 + 4 + 4 + 4 + 8;
 
-	public static FixedFileInfo parse(long offset, ByteProvider provider) throws IOException {
+	public static VsFixedFileInfo parse(long offset, ByteProvider provider) throws IOException {
 		var bytes = provider.readBytes(offset, RECORD_SIZE);
 		var byteBuffer = ByteBuffer.wrap(bytes);
 		byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
 		return parse(byteBuffer);
 	}
 
-	public static FixedFileInfo parse(ByteBuffer byteBuffer) {
-		var info = new FixedFileInfo();
+	public static VsFixedFileInfo parse(ByteBuffer byteBuffer) {
+		var info = new VsFixedFileInfo();
 		info.signature = byteBuffer.getInt();
 		info.structVersion = byteBuffer.getInt();
 		info.fileVersion = byteBuffer.getLong();

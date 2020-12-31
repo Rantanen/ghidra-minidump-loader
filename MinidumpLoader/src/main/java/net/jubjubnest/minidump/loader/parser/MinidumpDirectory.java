@@ -6,25 +6,25 @@ import java.nio.ByteOrder;
 
 import ghidra.app.util.bin.ByteProvider;
 
-public class Directory {
-	public static final int RECORD_SIZE = 4 + LocationDescriptor.RECORD_SIZE;
+public class MinidumpDirectory {
+	public static final int RECORD_SIZE = 4 + MinidumpLocationDescriptor.RECORD_SIZE;
 
-	public static Directory parse(long offset, ByteProvider provider) throws IOException {
+	public static MinidumpDirectory parse(long offset, ByteProvider provider) throws IOException {
 		var bytes = provider.readBytes(offset, RECORD_SIZE);
 		var byteBuffer = ByteBuffer.wrap(bytes);
 		byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
 		return parse(byteBuffer);
 	}
 
-	public static Directory parse(ByteBuffer byteBuffer) {
-		var directory = new Directory();
+	public static MinidumpDirectory parse(ByteBuffer byteBuffer) {
+		var directory = new MinidumpDirectory();
 		directory.streamType = byteBuffer.getInt();
-		directory.location = LocationDescriptor.parse(byteBuffer);
+		directory.location = MinidumpLocationDescriptor.parse(byteBuffer);
 		return directory;
 	}
 
 	public int streamType;
-	public LocationDescriptor location;
+	public MinidumpLocationDescriptor location;
 
 	public static final int TYPE_UNUSED = 0;
 	public static final int TYPE_RESERVED0 = 1;

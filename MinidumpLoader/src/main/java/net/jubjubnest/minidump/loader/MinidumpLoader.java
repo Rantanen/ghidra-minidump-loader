@@ -57,17 +57,17 @@ import net.jubjubnest.minidump.contrib.pe.NTHeader;
 import net.jubjubnest.minidump.contrib.pe.OptionalHeader;
 import net.jubjubnest.minidump.contrib.pe.PortableExecutable;
 import net.jubjubnest.minidump.contrib.pe.PortableExecutable.SectionLayout;
-import net.jubjubnest.minidump.loader.parser.ContextX64;
-import net.jubjubnest.minidump.loader.parser.Directory;
-import net.jubjubnest.minidump.loader.parser.Header;
-import net.jubjubnest.minidump.loader.parser.LocationDescriptor;
-import net.jubjubnest.minidump.loader.parser.Memory64List;
-import net.jubjubnest.minidump.loader.parser.MemoryInfo;
-import net.jubjubnest.minidump.loader.parser.MemoryInfoList;
-import net.jubjubnest.minidump.loader.parser.Module;
-import net.jubjubnest.minidump.loader.parser.ModuleList;
+import net.jubjubnest.minidump.loader.parser.Context64;
+import net.jubjubnest.minidump.loader.parser.MinidumpDirectory;
+import net.jubjubnest.minidump.loader.parser.MinidumpHeader;
+import net.jubjubnest.minidump.loader.parser.MinidumpLocationDescriptor;
+import net.jubjubnest.minidump.loader.parser.MinidumpMemory64List;
+import net.jubjubnest.minidump.loader.parser.MinidumpMemoryInfo;
+import net.jubjubnest.minidump.loader.parser.MinidumpMemoryInfoList;
+import net.jubjubnest.minidump.loader.parser.MinidumpModule;
+import net.jubjubnest.minidump.loader.parser.MinidumpModuleList;
 import net.jubjubnest.minidump.loader.parser.ThreadInformationBlock;
-import net.jubjubnest.minidump.loader.parser.ThreadList;
+import net.jubjubnest.minidump.loader.parser.MinidumpThreadList;
 import net.jubjubnest.minidump.shared.ImageLoadInfo;
 import net.jubjubnest.minidump.shared.ModuleData;
 import net.jubjubnest.minidump.shared.ThreadData;
@@ -101,16 +101,16 @@ public class MinidumpLoader extends AbstractLibrarySupportLoader {
 			TaskMonitor monitor, MessageLog log) throws CancelledException, IOException {
 
 		log.appendMsg(this.getClass().getName(), String.format("Loading minidump: %s", provider.getAbsolutePath()));
-		var header = Header.parse(0, provider);
+		var header = MinidumpHeader.parse(0, provider);
 		log.appendMsg(this.getClass().getName(), String.format("Total streams: %s", header.streamsCount));
 
 		// Index all streams. We'll need to be a bit careful in what order we process
 		// these so we'll first figure out what we have.
-		var directories = new HashMap<Integer, List<Directory>>();
+		var directories = new HashMap<Integer, List<MinidumpDirectory>>();
 		for (int i = 0; i < header.streamsCount; i++) {
-			var offset = header.streamsOffset + Directory.RECORD_SIZE * i;
-			var directory = Directory.parse(offset, provider);
-			var list = directories.computeIfAbsent(directory.streamType, (key) -> new ArrayList<Directory>());
+			var offset = header.streamsOffset + MinidumpDirectory.RECORD_SIZE * i;
+			var directory = MinidumpDirectory.parse(offset, provider);
+			var list = directories.computeIfAbsent(directory.streamType, (key) -> new ArrayList<MinidumpDirectory>());
 			list.add(directory);
 
 			log.appendMsg(this.getClass().getName(),
@@ -119,7 +119,7 @@ public class MinidumpLoader extends AbstractLibrarySupportLoader {
 
 		// First load the memory in the program. More or less everything else depends on memory addresses
 		// for which we'll want a byte provider that can access the bytes based on in-memory addresses.
-		var memoryList = directories.get(Directory.TYPE_MEMORY64LISTSTREAM);
+		var memoryList = directories.get(MinidumpDirectory.TYPE_MEMORY64LISTSTREAM);
 		if (memoryList == null)
 			throw new IllegalArgumentException("Minidump contains no memory segments");
 		if (memoryList.size() != 1)
@@ -130,14 +130,14 @@ public class MinidumpLoader extends AbstractLibrarySupportLoader {
 
 		// The modules and private memory are somewhat well defined and should not overlap
 		// so the order in which they are loaded doesn't really matter.
-		var moduleList = directories.get(Directory.TYPE_MODULELISTSTREAM);
+		var moduleList = directories.get(MinidumpDirectory.TYPE_MODULELISTSTREAM);
 		if (moduleList != null) {
 			for (var m : moduleList) {
 				loadModules(provider, loadSpec, memoryProvider, m.location, program, monitor, log);
 			}
 		}
 		
-		var memoryInfoList = directories.get(Directory.TYPE_MEMORYINFOLISTSTREAM);
+		var memoryInfoList = directories.get(MinidumpDirectory.TYPE_MEMORYINFOLISTSTREAM);
 		if (memoryInfoList != null) {
 			for (var m : memoryInfoList)
 				loadPrivateMemory(provider, memoryProvider, m.location, program, monitor, log);
@@ -146,7 +146,7 @@ public class MinidumpLoader extends AbstractLibrarySupportLoader {
 		// The thread list must be processed after the private memory is loaded. The memory loading
 		// can't tell stack apart from the heap so instead loading the threads assumes the stack
 		// memory has been loaded already and 'steals' it away from the heap.
-		var threadList = directories.get(Directory.TYPE_THREADLISTSTREAM);
+		var threadList = directories.get(MinidumpDirectory.TYPE_THREADLISTSTREAM);
 		if (threadList != null) {
 			for (var m : threadList) {
 				loadThreads(provider, memoryProvider, loadSpec, m.location, program, monitor, log);
@@ -154,17 +154,17 @@ public class MinidumpLoader extends AbstractLibrarySupportLoader {
 		}
 	}
 
-	private Memory64List readMemory64(ByteProvider provider, LocationDescriptor location, Program program,
+	private MinidumpMemory64List readMemory64(ByteProvider provider, MinidumpLocationDescriptor location, Program program,
 			TaskMonitor monitor, MessageLog log) throws IOException {
 		if (monitor.isCancelled())
-			return new Memory64List();
+			return new MinidumpMemory64List();
 
-		var list = Memory64List.parse(location.offset, provider);
+		var list = MinidumpMemory64List.parse(location.offset, provider);
 		log.appendMsg(this.getClass().getName(), String.format("  -> Memory segments: %s", list.memoryRangeCount));
 		return list;
 	}
 
-	private void loadPrivateMemory(ByteProvider provider, ByteProvider memoryProvider, LocationDescriptor location,
+	private void loadPrivateMemory(ByteProvider provider, ByteProvider memoryProvider, MinidumpLocationDescriptor location,
 			Program program, TaskMonitor monitor, MessageLog log) throws IOException, CancelledException {
 		if (monitor.isCancelled())
 			return;
@@ -172,28 +172,28 @@ public class MinidumpLoader extends AbstractLibrarySupportLoader {
 		AddressFactory af = program.getAddressFactory();
 		AddressSpace space = af.getDefaultAddressSpace();
 
-		var list = MemoryInfoList.parse(location.offset, provider);
+		var list = MinidumpMemoryInfoList.parse(location.offset, provider);
 		for (var memoryInfo : list.descriptors) {
-			if (memoryInfo.type != MemoryInfo.MEM_TYPE_PRIVATE)
+			if (memoryInfo.type != MinidumpMemoryInfo.MEM_TYPE_PRIVATE)
 				continue;
-			if (memoryInfo.state != MemoryInfo.MEM_STATE_COMMIT)
+			if (memoryInfo.state != MinidumpMemoryInfo.MEM_STATE_COMMIT)
 				continue;
 
 			FileBytes regionBytes = MemoryBlockUtils.createFileBytes(program, memoryProvider, memoryInfo.baseAddress,
 					memoryInfo.regionSize, monitor);
 
-			boolean r = memoryInfo.protect == MemoryInfo.PAGE_EXECUTE_READ
-					|| memoryInfo.protect == MemoryInfo.PAGE_EXECUTE_READWRITE
-					|| memoryInfo.protect == MemoryInfo.PAGE_EXECUTE_WRITECOPY
-					|| memoryInfo.protect == MemoryInfo.PAGE_READONLY || memoryInfo.protect == MemoryInfo.PAGE_READWRITE
-					|| memoryInfo.protect == MemoryInfo.PAGE_WRITECOPY;
-			boolean w = memoryInfo.protect == MemoryInfo.PAGE_EXECUTE_READWRITE
-					|| memoryInfo.protect == MemoryInfo.PAGE_EXECUTE_WRITECOPY
-					|| memoryInfo.protect == MemoryInfo.PAGE_READWRITE
-					|| memoryInfo.protect == MemoryInfo.PAGE_WRITECOPY;
-			boolean x = memoryInfo.protect == MemoryInfo.PAGE_EXECUTE_READ
-					|| memoryInfo.protect == MemoryInfo.PAGE_EXECUTE_READWRITE
-					|| memoryInfo.protect == MemoryInfo.PAGE_EXECUTE_WRITECOPY;
+			boolean r = memoryInfo.protect == MinidumpMemoryInfo.PAGE_EXECUTE_READ
+					|| memoryInfo.protect == MinidumpMemoryInfo.PAGE_EXECUTE_READWRITE
+					|| memoryInfo.protect == MinidumpMemoryInfo.PAGE_EXECUTE_WRITECOPY
+					|| memoryInfo.protect == MinidumpMemoryInfo.PAGE_READONLY || memoryInfo.protect == MinidumpMemoryInfo.PAGE_READWRITE
+					|| memoryInfo.protect == MinidumpMemoryInfo.PAGE_WRITECOPY;
+			boolean w = memoryInfo.protect == MinidumpMemoryInfo.PAGE_EXECUTE_READWRITE
+					|| memoryInfo.protect == MinidumpMemoryInfo.PAGE_EXECUTE_WRITECOPY
+					|| memoryInfo.protect == MinidumpMemoryInfo.PAGE_READWRITE
+					|| memoryInfo.protect == MinidumpMemoryInfo.PAGE_WRITECOPY;
+			boolean x = memoryInfo.protect == MinidumpMemoryInfo.PAGE_EXECUTE_READ
+					|| memoryInfo.protect == MinidumpMemoryInfo.PAGE_EXECUTE_READWRITE
+					|| memoryInfo.protect == MinidumpMemoryInfo.PAGE_EXECUTE_WRITECOPY;
 			Address baseAddress = space.getAddress(memoryInfo.baseAddress);
 			try {
 				MemoryBlockUtils.createInitializedBlock(program, false, "private_memory", baseAddress, regionBytes, 0,
@@ -208,15 +208,15 @@ public class MinidumpLoader extends AbstractLibrarySupportLoader {
 		PeLoader loader;
 		PeLoader.ImageInfo info;
 		ByteProvider peBytes;
-		Module module;
+		MinidumpModule module;
 	}
 
-	private void loadModules(ByteProvider provider, LoadSpec loadSpec, ByteProvider memoryProvider, LocationDescriptor location,
+	private void loadModules(ByteProvider provider, LoadSpec loadSpec, ByteProvider memoryProvider, MinidumpLocationDescriptor location,
 			Program program, TaskMonitor monitor, MessageLog log) throws CancelledException, IOException {
 		if (monitor.isCancelled())
 			return;
 
-		var list = ModuleList.parse(location.offset, provider);
+		var list = MinidumpModuleList.parse(location.offset, provider);
 		var progress = 0;
 		var images = new ArrayList<PeImageData>();
 		for (var module : list.modules) {
@@ -253,7 +253,7 @@ public class MinidumpLoader extends AbstractLibrarySupportLoader {
 			processPeImage(image, program, monitor, log);
 	}
 	
-	private PeImageData loadPeImage(ByteProvider peBytes, LoadSpec loadSpec, ProgramModule programModule, Module module,
+	private PeImageData loadPeImage(ByteProvider peBytes, LoadSpec loadSpec, ProgramModule programModule, MinidumpModule module,
 			Program program, TaskMonitor monitor, MessageLog log)
 			throws IOException, CancelledException {
 
@@ -294,7 +294,7 @@ public class MinidumpLoader extends AbstractLibrarySupportLoader {
 		return result;
 	}
 
-	private void moveProgramOptions(Module module, Program program) {
+	private void moveProgramOptions(MinidumpModule module, Program program) {
 		Options programOptions = program.getOptions(Program.PROGRAM_INFO);
 		Options allModuleOptions = programOptions.getOptions("Module Information");
 		Options moduleOptions = allModuleOptions.getOptions(module.getBaseName().replace('.', '_'));
@@ -394,7 +394,7 @@ public class MinidumpLoader extends AbstractLibrarySupportLoader {
 		storeModuleData(image, program);
 	}
 	
-	private void loadThreads(ByteProvider provider, ByteProvider memoryProvider, LoadSpec loadSpec, LocationDescriptor location,
+	private void loadThreads(ByteProvider provider, ByteProvider memoryProvider, LoadSpec loadSpec, MinidumpLocationDescriptor location,
 			Program program, TaskMonitor monitor, MessageLog log) throws IOException {
 		if (monitor.isCancelled())
 			return;
@@ -402,11 +402,11 @@ public class MinidumpLoader extends AbstractLibrarySupportLoader {
 		AddressFactory af = program.getAddressFactory();
 		AddressSpace space = af.getDefaultAddressSpace();
 		
-		var threadList = ThreadList.parse(location.offset, provider);
+		var threadList = MinidumpThreadList.parse(location.offset, provider);
 		for (var thread : threadList.threads) {
 			var tib = ThreadInformationBlock.parse(loadSpec, thread.teb, memoryProvider);
 			
-			var ctx = ContextX64.parse(thread.threadContext.offset, provider);
+			var ctx = Context64.parse(thread.threadContext.offset, provider);
 			
 			var threadData = new ThreadData(
 				thread.threadId,

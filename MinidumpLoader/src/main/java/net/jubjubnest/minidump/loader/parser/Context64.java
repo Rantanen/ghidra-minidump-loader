@@ -6,7 +6,12 @@ import java.nio.ByteOrder;
 
 import ghidra.app.util.bin.ByteProvider;
 
-public class ContextX64 {
+/**
+ * 64-bit CPU context
+ * 
+ * https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-context
+ */
+public class Context64 {
 
 	public static final int RECORD_SIZE = 
 			6 * 8 +
@@ -19,15 +24,15 @@ public class ContextX64 {
 			26 * 16 + 8 +
 			5 * 8;
 
-	public static ContextX64 parse(long offset, ByteProvider provider) throws IOException {
+	public static Context64 parse(long offset, ByteProvider provider) throws IOException {
 		var bytes = provider.readBytes(offset, RECORD_SIZE);
 		var byteBuffer = ByteBuffer.wrap(bytes);
 		byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
 		return parse(byteBuffer);
 	}
 
-	public static ContextX64 parse(ByteBuffer byteBuffer) {
-		var ctx = new ContextX64();
+	public static Context64 parse(ByteBuffer byteBuffer) {
+		var ctx = new Context64();
 
 		ctx.p1Home = byteBuffer.getLong();
 		ctx.p2Home = byteBuffer.getLong();

@@ -7,14 +7,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 import ghidra.app.util.bin.ByteProvider;
-import net.jubjubnest.minidump.loader.parser.Memory64Descriptor;
-import net.jubjubnest.minidump.loader.parser.Memory64List;
+import net.jubjubnest.minidump.loader.parser.MinidumpMemory64Descriptor;
+import net.jubjubnest.minidump.loader.parser.MinidumpMemory64List;
 
 public class MinidumpMemoryProvider implements ByteProvider {
 
-	public MinidumpMemoryProvider(ByteProvider provider, Memory64List memoryList) {
+	public MinidumpMemoryProvider(ByteProvider provider, MinidumpMemory64List memoryList) {
 		this.provider = provider;
-		this.segments = new ArrayList<Memory64Descriptor>();
+		this.segments = new ArrayList<MinidumpMemory64Descriptor>();
 		this.segments.addAll(memoryList.descriptors);
 		this.segments.sort((a, b) -> Long.signum(a.baseAddress - b.baseAddress));
 
@@ -28,7 +28,7 @@ public class MinidumpMemoryProvider implements ByteProvider {
 	}
 
 	ByteProvider provider;
-	ArrayList<Memory64Descriptor> segments;
+	ArrayList<MinidumpMemory64Descriptor> segments;
 	ArrayList<Long> segmentStarts;
 	long totalMemSize;
 
