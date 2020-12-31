@@ -126,12 +126,21 @@ class ThreadViewProvider extends ComponentProvider implements DomainObjectListen
 	}
 	
 	public void threadActivated(int threadIdx) {
-		activeThread = threadList.get(threadIdx);
+		if (threadIdx == -1) {
+			activeThread = null;
+		} else {
+			activeThread = threadList.get(threadIdx);
+		}
+
 		refreshStack();
 	}
 	
 	private void refreshStack() {
 		var frames = new ArrayList<StackFrame>();
+		if (activeThread == null) {
+			stackList.setFrames(frames, program);
+			return;
+		}
 
 		// Set up a pointer-sized byte buffer for re-using when reading addresses.
 		var pointerSize = program.getLanguage().getLanguageDescription().getSize();
