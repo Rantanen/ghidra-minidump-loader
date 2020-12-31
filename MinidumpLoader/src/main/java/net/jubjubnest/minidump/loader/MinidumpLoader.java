@@ -57,7 +57,6 @@ import net.jubjubnest.minidump.contrib.pe.NTHeader;
 import net.jubjubnest.minidump.contrib.pe.OptionalHeader;
 import net.jubjubnest.minidump.contrib.pe.PortableExecutable;
 import net.jubjubnest.minidump.contrib.pe.PortableExecutable.SectionLayout;
-import net.jubjubnest.minidump.loader.parser.Context64;
 import net.jubjubnest.minidump.loader.parser.MinidumpDirectory;
 import net.jubjubnest.minidump.loader.parser.MinidumpHeader;
 import net.jubjubnest.minidump.loader.parser.MinidumpLocationDescriptor;
@@ -68,6 +67,7 @@ import net.jubjubnest.minidump.loader.parser.MinidumpModule;
 import net.jubjubnest.minidump.loader.parser.MinidumpModuleList;
 import net.jubjubnest.minidump.loader.parser.ThreadInformationBlock;
 import net.jubjubnest.minidump.loader.parser.MinidumpThreadList;
+import net.jubjubnest.minidump.shared.Context64;
 import net.jubjubnest.minidump.shared.ImageLoadInfo;
 import net.jubjubnest.minidump.shared.ModuleData;
 import net.jubjubnest.minidump.shared.ThreadData;
@@ -414,7 +414,8 @@ public class MinidumpLoader extends AbstractLibrarySupportLoader {
 				space.getAddress(tib.stackLimit),
 				space.getAddress(thread.stack.startOfMemoryRange),
 				space.getAddress(ctx.rsp),
-				space.getAddress(ctx.rip)
+				space.getAddress(ctx.rip),
+				ctx
 			);
 			ThreadData.storeThreadData(program, threadData);
 			

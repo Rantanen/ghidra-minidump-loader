@@ -48,7 +48,6 @@ class ThreadViewProvider extends ComponentProvider implements DomainObjectListen
 	private StackList stackList;
 	private Program program;
 	private List<ThreadData> threadList;
-	private ArrayList<Address> offsets;
 	private ThreadViewPlugin plugin;
 	private ThreadData activeThread;
 	
@@ -251,13 +250,6 @@ class ThreadViewProvider extends ComponentProvider implements DomainObjectListen
 		}
 		
 		return null;
-	}
-	
-	void navigateStack(int idx) {
-		var offset = offsets.get(idx);
-		if (offset == null)
-			return;
-		plugin.goToService.goTo(offset);
 	}
 
 	@Override

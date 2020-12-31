@@ -17,6 +17,8 @@ public class ThreadData {
 	public Address stackPointer;
 	public Address sp;
 	public Address ip;
+
+	public ThreadContext context;
 	
 	private static final String OBJECT_MAP_KEY = ThreadData.class.getCanonicalName();
 	
@@ -25,13 +27,16 @@ public class ThreadData {
 	// The program is given as a parameter in the case this ever needs to take stack direction into account.
 	private Address key(Program program) { return this.stackLimit; }
 	
-	public ThreadData(int id, Address stackBase, Address stackLimit, Address stackPointer, Address sp, Address ip) {
+	public ThreadData(int id, Address stackBase, Address stackLimit, Address stackPointer,
+			Address sp, Address ip, ThreadContext context) {
+
 		this.id = id;
 		this.stackBase = stackBase;
 		this.stackLimit = stackLimit;
 		this.stackPointer = stackPointer;
 		this.sp = sp;
 		this.ip = ip;
+		this.context = context;
 	}
 	
 	private ThreadData(Program program, Record record) {
@@ -41,6 +46,12 @@ public class ThreadData {
 		stackPointer = stackBase.getNewAddress(record.stackPointer);
 		sp = stackBase.getNewAddress(record.sp);
 		ip = stackBase.getNewAddress(record.ip);
+		
+		switch (record.contextType) {
+		case Context64.CONTEXT_TYPE:
+			context = Context64.fromBytes(record.context);
+			break;
+		}
 	}
 	
 	public static List<ThreadData> getAllThreadData(Program program) {
@@ -67,12 +78,17 @@ public class ThreadData {
 	
 	public static class Record implements Saveable {
 		
+		// Version 0
 		public int id;
 		public long stackBase;
 		public long stackLimit;
 		public long stackPointer;
 		public long sp;
 		public long ip;
+		
+		// Version 1
+		public int contextType;
+		public byte[] context;
 		
 		public Record(ThreadData data) {
 			id = data.id;
@@ -81,6 +97,14 @@ public class ThreadData {
 			stackPointer = data.stackPointer.getOffset();
 			sp = data.sp.getOffset();
 			ip = data.ip.getOffset();
+			
+			if (data.context == null) {
+				contextType = 0;
+				context = new byte[0];
+			} else {
+				contextType = data.context.getType();
+				context = data.context.toBytes();
+			}
 		}
 		
 		public Record() {}
@@ -94,6 +118,9 @@ public class ThreadData {
 				long.class,
 				long.class,
 				long.class,
+
+				int.class,
+				String.class,
 			};
 		}
 
@@ -105,6 +132,9 @@ public class ThreadData {
 			objStorage.putLong(stackPointer);
 			objStorage.putLong(sp);
 			objStorage.putLong(ip);
+			
+			objStorage.putInt(contextType);
+			objStorage.putBytes(context);
 		}
 
 		@Override
@@ -115,21 +145,40 @@ public class ThreadData {
 			stackPointer = objStorage.getLong();
 			sp = objStorage.getLong();
 			ip = objStorage.getLong();
+			
+			contextType = objStorage.getInt();
+			context = objStorage.getBytes();
 		}
 
 		@Override
 		public int getSchemaVersion() {
-			return 0;
+			return 1;
 		}
 
 		@Override
 		public boolean isUpgradeable(int oldSchemaVersion) {
-			return false;
+			return true;
 		}
 
 		@Override
 		public boolean upgrade(ObjectStorage oldObjStorage, int oldSchemaVersion, ObjectStorage currentObjStorage) {
-			return false;
+
+			currentObjStorage.putInt(oldObjStorage.getInt());
+			currentObjStorage.putLong(oldObjStorage.getLong());
+			currentObjStorage.putLong(oldObjStorage.getLong());
+			currentObjStorage.putLong(oldObjStorage.getLong());
+			currentObjStorage.putLong(oldObjStorage.getLong());
+			currentObjStorage.putLong(oldObjStorage.getLong());
+
+			if (oldSchemaVersion < 1) {
+				currentObjStorage.putInt(0);
+				currentObjStorage.putBytes(new byte[0]);
+			} else {
+				currentObjStorage.putInt(oldObjStorage.getInt());
+				currentObjStorage.putBytes(oldObjStorage.getBytes());
+			}
+			
+			return true;
 		}
 
 		@Override

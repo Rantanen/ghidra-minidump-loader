@@ -1,18 +1,22 @@
-package net.jubjubnest.minidump.loader.parser;
+package net.jubjubnest.minidump.shared;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import ghidra.app.util.bin.ByteProvider;
+import ghidra.framework.plugintool.PluginTool;
+import ghidra.program.model.listing.Program;
+import net.jubjubnest.minidump.plugin.SetRegistersCmdBuilder;
 
 /**
  * 64-bit CPU context
  * 
  * https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-context
  */
-public class Context64 {
+public class Context64 implements ThreadContext {
 
+	public static final int CONTEXT_TYPE = 1;
 	public static final int RECORD_SIZE = 
 			6 * 8 +
 			2 * 4 +
@@ -29,6 +33,108 @@ public class Context64 {
 		var byteBuffer = ByteBuffer.wrap(bytes);
 		byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
 		return parse(byteBuffer);
+	}
+
+	@Override
+	public int getType() {
+		return CONTEXT_TYPE;
+	}
+
+	public static ThreadContext fromBytes(byte[] bytes) {
+		var byteBuffer = ByteBuffer.wrap(bytes);
+		byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+		return parse(byteBuffer);
+	}
+
+	@Override
+	public byte[] toBytes() {
+
+		ByteBuffer buffer = ByteBuffer.allocate(1200);
+		buffer.order(ByteOrder.LITTLE_ENDIAN);
+		
+		buffer.putLong(p1Home);
+		buffer.putLong(p2Home);
+		buffer.putLong(p3Home);
+		buffer.putLong(p4Home);
+		buffer.putLong(p5Home);
+		buffer.putLong(p6Home);
+		
+		buffer.putInt(contextFlags);
+		buffer.putInt(mxCsr);
+		
+		buffer.putShort(segCs);
+		buffer.putShort(segDs);
+		buffer.putShort(segEs);
+		buffer.putShort(segFs);
+		buffer.putShort(segGs);
+		buffer.putShort(segSs);
+		buffer.putInt(eFlags);
+
+		buffer.putLong(dr0);
+		buffer.putLong(dr1);
+		buffer.putLong(dr2);
+		buffer.putLong(dr3);
+		buffer.putLong(dr6);
+		buffer.putLong(dr7);
+
+		buffer.putLong(rax);
+		buffer.putLong(rcx);
+		buffer.putLong(rdx);
+		buffer.putLong(rbx);
+		buffer.putLong(rsp);
+		buffer.putLong(rbp);
+		buffer.putLong(rsi);
+		buffer.putLong(rdi);
+		buffer.putLong(r8);
+		buffer.putLong(r9);
+		buffer.putLong(r10);
+		buffer.putLong(r11);
+		buffer.putLong(r12);
+		buffer.putLong(r13);
+		buffer.putLong(r14);
+		buffer.putLong(r15);
+		
+		buffer.putLong(rip);
+		
+		buffer.put(xmms);
+
+		buffer.put(vectorRegister);
+		buffer.putLong(vectorControl);
+
+		buffer.putLong(debugControl);
+		buffer.putLong(lastBranchToRip);
+		buffer.putLong(lastBranchFromRip);
+		buffer.putLong(lastExceptionToRip);
+		buffer.putLong(lastExceptionFromRip);
+
+		return buffer.array();
+	}
+
+	@Override
+	public void apply(Program program, PluginTool tool) {
+		SetRegistersCmdBuilder builder = new SetRegistersCmdBuilder(program, program.getImageBase().getNewAddress(rip));
+
+		builder.setRegister("RAX", rax);
+		builder.setRegister("RCX", rcx);
+		builder.setRegister("RDX", rdx);
+		builder.setRegister("RBX", rbx);
+		builder.setRegister("RSP", rsp);
+		builder.setRegister("RBP", rbp);
+		builder.setRegister("RSI", rsi);
+		
+		builder.setRegister("RDI", rdi);
+		builder.setRegister("R8", r8);
+		builder.setRegister("R9", r9);
+		builder.setRegister("R10", r10);
+		builder.setRegister("R11", r11);
+		builder.setRegister("R12", r12);
+		builder.setRegister("R13", r13);
+		builder.setRegister("R14", r14);
+		builder.setRegister("R15", r15);
+
+		builder.setRegister("RIP", rip);
+		
+		tool.execute(builder.getCommand(), program);
 	}
 
 	public static Context64 parse(ByteBuffer byteBuffer) {
