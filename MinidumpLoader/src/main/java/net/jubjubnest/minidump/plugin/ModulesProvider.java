@@ -58,15 +58,6 @@ public class ModulesProvider extends ComponentProvider implements DomainObjectLi
 		action = new DockingAction("Load Located Symbols", getName()) {
 			@Override
 			public void actionPerformed(ActionContext context) {
-
-				if (program.getCurrentTransaction() == null) {
-					program.startTransaction("Action");
-				}
-				ModuleData d = ModuleData.getModuleData(program, program.getImageBase().getNewAddress(0x7ff6a4930000l));
-				counter += 1;
-				d.loadedSymbols = "symbols" + counter;
-				ModuleData.setModuleData(program, d);
-				// loadLocatedSymbols();
 			}
 		};
 		action.setToolBarData(new ToolBarData(Icons.ADD_ICON, null));
@@ -97,10 +88,6 @@ public class ModulesProvider extends ComponentProvider implements DomainObjectLi
 
 		refreshModules();
 	}
-	
-	public List<ModuleState> getModules() {
-		return this.table.getModules();
-	}
 
 	void navigateModule(int idx) {
 		var module = table.getModule(idx);
@@ -108,20 +95,6 @@ public class ModulesProvider extends ComponentProvider implements DomainObjectLi
 			return;
 		plugin.goToService.goTo(module.baseAddress);
 	}
-	
-	/*
-	void locateSymbols(int idx) {
-		var module = table.getModule(idx);
-		if (module == null)
-			return;
-		
-		TaskLauncher.launch(new LocatePdbTask(program, module, this));
-	}
-	
-	protected void loadLocatedSymbols() {
-		TaskLauncher.launch(new LoadPdbsTask(program, this));
-	}
-	*/
 
 	public void refreshModules() {
 		if (program == null) {

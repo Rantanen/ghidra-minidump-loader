@@ -27,6 +27,10 @@ public class PdbResolver {
 
 		boolean analyzed = program.getOptions(Program.PROGRAM_INFO).getBoolean(Program.ANALYZED, false);
 		ModuleParser.PdbInfo pdbInfo = ModuleParser.getPdbInfo(program, moduleBase);
+		if (pdbInfo == null) {
+			return null;
+		}
+
 		PdbProgramAttributes pdbAttributes = new PdbProgramAttributes(
 				pdbInfo.guid, Integer.toString(pdbInfo.age),
 				false, analyzed, null, pdbInfo.pdbName, "RSDS");
@@ -65,7 +69,7 @@ public class PdbResolver {
 
 	public static PdbResult validatePdbCandidate(File candidate, boolean verifyGuidAge, PdbProgramAttributes pdbAttributes, TaskMonitor monitor) throws CancelledException, IOException, PdbException {
 
-		if (!candidate.exists()) {
+		if (candidate == null || !candidate.exists()) {
 			return null;
 		}
 

@@ -19,6 +19,10 @@ public class ModuleParser {
 	
 	public static PdbInfo getPdbInfo(Program program, Address moduleBase) throws MemoryAccessException, IOException {
 		Address codeviewAddress = optionalHeader(program, moduleBase);
+		if (codeviewAddress == null) {
+			return null;
+		}
+
 		String guid = GuidUtil.getGuidString(program, codeviewAddress.add(4), false);
 
 		ByteProvider provider = new MemoryByteProvider(program.getMemory(), moduleBase);

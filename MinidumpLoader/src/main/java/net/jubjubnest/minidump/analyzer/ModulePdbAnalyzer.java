@@ -68,6 +68,9 @@ public class ModulePdbAnalyzer extends AbstractAnalyzer {
 
 			monitor.setMessage(md.name + ": Locating PDB...");
 			PdbResolver.PdbResult result = locateModulePdb(program, md, log, monitor);
+			if (result == null) {
+				continue;
+			}
 
 			monitor.setMessage(md.name + ": Loading PDB...");
 			loadModulePdb(program, md, result, log, monitor);
@@ -80,6 +83,9 @@ public class ModulePdbAnalyzer extends AbstractAnalyzer {
 		PdbProgramAttributes pdbAttributes;
 		try {
 			pdbAttributes = PdbResolver.getAttributes(program, md.baseAddress);
+			if (pdbAttributes == null) {
+				return null;
+			}
 		} catch (MemoryAccessException | IOException e) {
 			log.appendMsg(getName(), "Exception parsing PDB information from the module: " + md.name);
 			log.appendException(e);
