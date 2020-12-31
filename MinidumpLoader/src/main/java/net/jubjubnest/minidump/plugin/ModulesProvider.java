@@ -7,7 +7,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.JComponent;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.SwingConstants;
+import javax.swing.table.DefaultTableModel;
 
 import docking.ActionContext;
 import docking.ComponentProvider;
@@ -44,13 +48,15 @@ public class ModulesProvider extends ComponentProvider implements DomainObjectLi
 	private void buildPanel() {
 
 		table = new ModulesList();
-
 		panel = new JPanel(new BorderLayout());
-		panel.add(table);
-		setVisible(true);
+
+		addToTool();
+		programActivated(null);
 	}
 	
 	static int counter = 0;
+	
+	
 
 	// TODO: Customize actions
 	private void createActions() {
@@ -97,13 +103,22 @@ public class ModulesProvider extends ComponentProvider implements DomainObjectLi
 
 	public void refreshModules() {
 		if (program == null) {
-			this.table.setModel(new ModulesTableModel(new ArrayList<>()));
+			panel.removeAll();
+			panel.add(new JLabel("No program loaded", SwingConstants.CENTER));
+			this.table.setModel(new DefaultTableModel());
+			return;
+		}
+
+		List<ModuleData> moduleData = ModuleData.getAllModules(program);
+		if (moduleData == null) {
+			panel.removeAll();
+			panel.add(new JLabel("No module information present in the loaded program", SwingConstants.CENTER));
+			this.table.setModel(new DefaultTableModel());
 			return;
 		}
 		
-		List<ModuleData> moduleData = ModuleData.getAllModules(program);
-		if (moduleData == null)
-			return;
+		panel.removeAll();
+		panel.add(new JScrollPane(table));
 		
 		List<ModuleState> items = new ArrayList<>();
 		for (ModuleData md : moduleData) {

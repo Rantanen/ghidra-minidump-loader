@@ -142,7 +142,6 @@ public class ModulePdbAnalyzer extends AbstractAnalyzer {
 
 			subMonitor = new SubTaskMonitor(pdbName, "Applying...", monitor);
 			subMonitor.addReplaceRule("^PDB: ", "");
-			subMonitor.addReplaceRule("^Applying \\d+ ", "Applying ");
 			PdbApplicator applicator = new PdbApplicator(pdbResult.file.getAbsolutePath(), pdbResult.pdb);
 			applicator.applyTo(program, null, md.baseAddress, null, subMonitor, new MessageLog());
 

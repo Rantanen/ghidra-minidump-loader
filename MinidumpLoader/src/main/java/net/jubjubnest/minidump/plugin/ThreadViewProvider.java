@@ -8,9 +8,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.JComponent;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingConstants;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
@@ -44,18 +46,18 @@ class ThreadViewProvider extends ComponentProvider implements DomainObjectListen
 	private JPanel panel;
 	private JTable threadTable;
 	private StackList stackList;
-	private DockingAction action;
 	private Program program;
 	private List<ThreadData> threadList;
 	private ArrayList<Address> offsets;
 	private ThreadViewPlugin plugin;
 	private ThreadData activeThread;
+	
+	private JSplitPane activePanel;
 
 	public ThreadViewProvider(ThreadViewPlugin plugin, String owner) {
 		super(plugin.getTool(), NAME, owner);
 		this.plugin = plugin;
 		buildPanel();
-		createActions();
 	}
 	
 	// Customize GUI
@@ -80,22 +82,11 @@ class ThreadViewProvider extends ComponentProvider implements DomainObjectListen
 
 		stackList = new StackList(this.plugin);
 
+		activePanel = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new JScrollPane(threadTable), new JScrollPane(stackList));
 		panel = new JPanel(new BorderLayout());
-		panel.add(new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new JScrollPane(threadTable), new JScrollPane(stackList)));
-		setVisible(true);
-	}
-
-	// TODO: Customize actions
-	private void createActions() {
-		action = new DockingAction("My Action", getName()) {
-			@Override
-			public void actionPerformed(ActionContext context) {
-			}
-		};
-		action.setToolBarData(new ToolBarData(Icons.ADD_ICON, null));
-		action.setEnabled(true);
-		action.markHelpUnnecessary();
-		dockingTool.addLocalAction(this, action);
+		
+		addToTool();
+		programActivated(null);
 	}
 	
 	public void programActivated(Program newProgram)
@@ -105,15 +96,21 @@ class ThreadViewProvider extends ComponentProvider implements DomainObjectListen
 			program = null;
 		}
 
-		if( newProgram == null )
+		if( newProgram == null ) {
+			setInactive("No program loaded");
 			return;
+		}
 
 		program = newProgram;
 		program.addListener(this);
 	
 		threadList = ThreadData.getAllThreadData(program);
-		if (threadList == null)
+		if (threadList == null || threadList.size() == 0) {
+			setInactive("No thread information present in the loaded program");
 			return;
+		}
+		
+		setActive();
 		
 		String[] headers = { "Thread ID", "StackP.", "InstP." };
 		String[][] data = new String[threadList.size()][headers.length];
@@ -142,7 +139,8 @@ class ThreadViewProvider extends ComponentProvider implements DomainObjectListen
 		var buffer = ByteBuffer.wrap(ptr);
 		buffer.order(ByteOrder.LITTLE_ENDIAN);
 
-		// Thread info will give us the top-of-the-stack register values so we'll start with those.
+		// Thread info will give us the top-of-the-stack register values so we'll start with those and then
+		// attempt to walk the stack back from there.
 		try {
 			var firstFrame = getCaller(activeThread.sp, activeThread.ip, buffer);
 			while (firstFrame != null) {
@@ -154,12 +152,27 @@ class ThreadViewProvider extends ComponentProvider implements DomainObjectListen
 				firstFrame = getCaller(firstFrame.returnPointer.add(ptr.length), rip, buffer);
 			}
 		} catch (IOException e1) {
-			// In case of an IO err,r we'll log it but don't do anything else.
+			// In case of an IO error we'll log it but don't do anything else.
 			// Show as much of the stack as we managed to gather.
 			Msg.warn(this, "Memory violation when resolving the call stack");
 		}
 		
 		stackList.setFrames(frames, program);
+	}
+	
+	private void setInactive(String message) {
+		panel.removeAll();
+		panel.add(new JLabel(message, SwingConstants.CENTER));
+
+		threadTable.setModel(new DefaultTableModel());
+		threadTable.clearSelection();
+
+		return;
+	}
+	
+	private void setActive() {
+		panel.removeAll();
+		panel.add(activePanel);
 	}
 	
 	StackFrame getCaller(Address stackPtr, Address instructionPtr, ByteBuffer buffer) throws IOException {
