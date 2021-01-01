@@ -37,6 +37,11 @@ public class PdbResolver {
 	}
 
 	public static class PdbResult {
+		public PdbResult(File file, AbstractPdb pdb) {
+			this.file = file;
+			this.pdb = pdb;
+		}
+
 		public File file;
 		public AbstractPdb pdb;
 	}
@@ -56,10 +61,10 @@ public class PdbResolver {
 				"srv*C:\\symbols*\\\\localhost\\NetworkSymCache*https://msdl.microsoft.com/download/symbols");
 		File symbolServerMatch = PdbResolver.loadSymbols(symbolPath, pdbAttributes);
 		if (symbolServerMatch != null) {
-			PdbResult result = new PdbResult();
-			result.file = symbolServerMatch;
-			result.pdb = PdbParser.parse(symbolServerMatch.getAbsolutePath(), new PdbReaderOptions(), monitor);
-			return result;
+			return new PdbResult(
+				symbolServerMatch, 
+				PdbParser.parse(symbolServerMatch.getAbsolutePath(), new PdbReaderOptions(), monitor)
+			);
 		}
 
 		return null;
@@ -82,10 +87,7 @@ public class PdbResolver {
 			}
 		}
 		
-		PdbResult result = new PdbResult();
-		result.file = candidate;
-		result.pdb = pdb;
-		return result;
+		return new PdbResult(candidate, pdb);
 	}
 	
 	public static class SymbolServerResult {
@@ -135,6 +137,7 @@ public class PdbResolver {
 			if (!cascadedFile.exists()) {
 				cascadedFile.getParentFile().mkdirs();
 				Files.copy(result.file, cascadedFile);
+				result.file = cascadedFile;
 			}
 		}
 		

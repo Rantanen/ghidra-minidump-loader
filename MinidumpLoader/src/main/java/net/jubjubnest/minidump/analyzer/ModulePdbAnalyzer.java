@@ -2,6 +2,11 @@ package net.jubjubnest.minidump.analyzer;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import docking.widgets.filechooser.GhidraFileChooser;
 import docking.widgets.filechooser.GhidraFileChooserMode;
@@ -23,6 +28,7 @@ import ghidra.util.filechooser.ExtensionFileFilter;
 import ghidra.util.task.TaskMonitor;
 import net.jubjubnest.minidump.loader.MinidumpLoader;
 import net.jubjubnest.minidump.plugin.PdbResolver;
+import net.jubjubnest.minidump.plugin.PdbResolver.PdbResult;
 import net.jubjubnest.minidump.shared.ModuleData;
 import net.jubjubnest.minidump.shared.SubTaskMonitor;
 
@@ -59,25 +65,43 @@ public class ModulePdbAnalyzer extends AbstractAnalyzer {
 		}
 		lastTransactionId = txId;
 		
+		List<SymbolInfo> symbols = new ArrayList<>();
+		boolean missingSymbols = false;
 		for (ModuleData md : ModuleData.getAllModules(program) ) {
 			if (md.loadedSymbols != null) {
 				continue;
 			}
 
 			monitor.setMessage(md.name + ": Locating PDB...");
-			PdbResolver.PdbResult result = locateModulePdb(program, md, log, monitor);
-			if (result == null) {
+			SymbolInfo info = locateModulePdb(program, md, log, monitor);
+			if (info != null) {
+				missingSymbols = missingSymbols || (info.result == null);
+				symbols.add(info);
+			}
+		}
+		
+		// If we're not in a headless mode, ask the user for input if there are missing symbols.
+		if (!SystemUtilities.isInHeadlessMode() && missingSymbols) {
+			monitor.setMessage("Waiting for user confirmation...");
+			SymbolLocationDialog locationDialog = new SymbolLocationDialog(symbols);
+			if (!locationDialog.confirm()) {
+				return false;
+			}
+		}
+		
+		for (SymbolInfo info : symbols) {
+			if (info.result == null) {
 				continue;
 			}
 
-			monitor.setMessage(md.name + ": Loading PDB...");
-			loadModulePdb(program, md, result, log, monitor);
+			monitor.setMessage(info.module.name + ": Loading PDB...");
+			loadModulePdb(program, info.module, info.result, log, monitor);
 		}
 		
 		return true;
 	}
 	
-	public PdbResolver.PdbResult locateModulePdb(Program program, ModuleData md, MessageLog log, TaskMonitor monitor) throws CancelledException {
+	public SymbolInfo locateModulePdb(Program program, ModuleData md, MessageLog log, TaskMonitor monitor) throws CancelledException {
 		PdbProgramAttributes pdbAttributes;
 		try {
 			pdbAttributes = PdbResolver.getAttributes(program, md.baseAddress);
@@ -89,46 +113,18 @@ public class ModulePdbAnalyzer extends AbstractAnalyzer {
 			log.appendException(e);
 			return null;
 		}
+		
+		SymbolInfo info = new SymbolInfo(md, pdbAttributes, null);
 
 		// Attempt to locate the PDB via non-interactive means.
 		try {
-			PdbResolver.PdbResult result = PdbResolver.locatePdb(pdbAttributes, monitor);
-			if (result != null) {
-				return result;
-			}
+			info.result = PdbResolver.locatePdb(pdbAttributes, monitor);
 		} catch (IOException | PdbException e) {
 			log.appendMsg(getName(), "Error locating PDB for " + md.name);
 			log.appendException(e);
 		}
-
-		// If we're not in a headless mode, ask the user for input.
-		if (!SystemUtilities.isInHeadlessMode()) {
-				
-			GhidraFileChooser pdbChooser = new GhidraFileChooser(null);
-			pdbChooser.setTitle("Select " + md.name + " PDB file");
-			pdbChooser.setApproveButtonText("Select PDB");
-			pdbChooser.setFileSelectionMode(GhidraFileChooserMode.FILES_ONLY);
-			pdbChooser.setFileFilter(new ExtensionFileFilter(new String[] { "pdb" }, "Program Database Files"));
-			
-			if (pdbAttributes.getPdbFile() != null) {
-				File expected = new File(pdbAttributes.getPdbFile());
-				pdbChooser.setCurrentDirectory(expected.getParentFile());
-			}
-
-			File pdbFile = pdbChooser.getSelectedFile();
-			PdbResolver.PdbResult result;
-			try {
-				result = PdbResolver.validatePdbCandidate(pdbFile, true, pdbAttributes, monitor);
-				if (result != null) {
-					return result;
-				}
-			} catch (IOException | PdbException e) {
-				log.appendMsg(getName(), "Error locating PDB for " + md.name);
-				log.appendException(e);
-			}
-		}
 		
-		return null;
+		return info;
 	}
 	
 	public void loadModulePdb(Program program, ModuleData md, PdbResolver.PdbResult pdbResult, MessageLog log, TaskMonitor monitor) throws CancelledException {
