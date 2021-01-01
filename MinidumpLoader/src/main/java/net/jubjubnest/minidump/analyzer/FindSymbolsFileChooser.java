@@ -17,13 +17,15 @@ class FindSymbolsFileChooser extends GhidraFileChooser {
 	
 	private final PdbProgramAttributes pdbAttributes;
 	private Worker worker = Worker.createGuiWorker();
+	private boolean useModulePdbPath;
 
 	private File rootDirectory;
 	private PdbResult result;
 	
-	public FindSymbolsFileChooser(Component parent, PdbProgramAttributes pdbAttributes) {
+	public FindSymbolsFileChooser(Component parent, PdbProgramAttributes pdbAttributes, boolean useModulePdbPath) {
 		super(parent);
 		this.pdbAttributes = pdbAttributes;
+		this.useModulePdbPath = useModulePdbPath;
 
 		setTitle("Locate " + pdbAttributes.getPdbFile());
 		setApproveButtonText("Select PDB");
@@ -34,7 +36,10 @@ class FindSymbolsFileChooser extends GhidraFileChooser {
 	@Override
 	public void setCurrentDirectory(File directory) {
 		super.setCurrentDirectory(directory);
-		worker.schedule(new CheckPdbPath(directory));
+		
+		if (useModulePdbPath) {
+			worker.schedule(new CheckPdbPath(directory));
+		}
 	}
 	
 	public PdbResult getValidatedResult() {

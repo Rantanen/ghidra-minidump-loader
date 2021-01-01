@@ -10,9 +10,11 @@ import ghidra.app.services.AnalyzerType;
 import ghidra.app.util.bin.format.pdb2.pdbreader.PdbException;
 import ghidra.app.util.bin.format.pdb2.pdbreader.PdbReaderOptions;
 import ghidra.app.util.importer.MessageLog;
+import ghidra.app.util.pdb.PdbLocator;
 import ghidra.app.util.pdb.PdbProgramAttributes;
 import ghidra.app.util.pdb.pdbapplicator.PdbApplicator;
 import ghidra.app.util.pdb.pdbapplicator.PdbApplicatorOptions;
+import ghidra.framework.options.OptionType;
 import ghidra.framework.options.Options;
 import ghidra.program.model.address.AddressSetView;
 import ghidra.program.model.listing.Program;
@@ -28,9 +30,22 @@ public class ModulePdbAnalyzer extends AbstractAnalyzer {
 	public final static String DESCRIPTION = "Attempts to locate and apply PDBs for individual modules in a Minidump.";
 	static final boolean DEFAULT_ENABLEMENT = true;
 	
+	private static final String INTERACTIVE_OPTION_NAME = "Interactive";
+	private static final String INTERACTIVE_OPTION_DESCRIPTION = "Confirm missing symbols using an interactive dialog.";
+	
+	private static final String SYMBOLPATH_OPTION_NAME = "Symbol Server";
+	private static final String SYMBOLPATH_OPTION_DESCRIPTION = "Symbol path in the symbol server format: srv*..*...";
+	
+	private static final String USEPDBPATH_OPTION_NAME = "Unsafe: Use PDB path from modules";
+	private static final String USEPDBPATH_OPTION_DESCRIPTION = "Use the PDB path embedded in the modules when searching PDB files.";
+
 	PdbReaderOptions pdbReaderOptions = new PdbReaderOptions();
 	PdbApplicatorOptions pdbApplicatorOptions = new PdbApplicatorOptions();
 	long lastTransactionId = -1;
+	
+	String symbolPath;
+	boolean isInteractive;
+	boolean useModulePdbPath;
 
 	public ModulePdbAnalyzer() {
 		super(NAME, DESCRIPTION, AnalyzerType.BYTE_ANALYZER);
@@ -71,9 +86,9 @@ public class ModulePdbAnalyzer extends AbstractAnalyzer {
 		}
 		
 		// If we're not in a headless mode, ask the user for input if there are missing symbols.
-		if (!SystemUtilities.isInHeadlessMode() && missingSymbols) {
+		if (isInteractive && !SystemUtilities.isInHeadlessMode() && missingSymbols) {
 			monitor.setMessage("Waiting for user confirmation...");
-			SymbolLocationDialog locationDialog = new SymbolLocationDialog(symbols);
+			SymbolLocationDialog locationDialog = new SymbolLocationDialog(symbols, useModulePdbPath);
 			if (!locationDialog.confirm()) {
 				return false;
 			}
@@ -108,7 +123,7 @@ public class ModulePdbAnalyzer extends AbstractAnalyzer {
 
 		// Attempt to locate the PDB via non-interactive means.
 		try {
-			info.result = PdbResolver.locatePdb(pdbAttributes, monitor);
+			info.result = PdbResolver.locatePdb(pdbAttributes, symbolPath, useModulePdbPath, monitor);
 		} catch (IOException | PdbException e) {
 			log.appendMsg(getName(), "Error locating PDB for " + md.name);
 			log.appendException(e);
@@ -146,5 +161,39 @@ public class ModulePdbAnalyzer extends AbstractAnalyzer {
 	public boolean canAnalyze(Program program) {
 		String executableFormat = program.getExecutableFormat();
 		return executableFormat != null && executableFormat.equals(MinidumpLoader.NAME);
+	}
+	
+	@Override
+	public void registerOptions(Options options, Program program) {
+		symbolPath = System.getenv("_NT_SYMBOL_PATH");
+		if (symbolPath == null || symbolPath.isEmpty()) {
+			symbolPath = "srv*~/symbolcache*https://msdl.microsoft.com/download/symbols";
+		}
+
+		options.registerOption(SYMBOLPATH_OPTION_NAME,
+				symbolPath,
+				null,
+				SYMBOLPATH_OPTION_DESCRIPTION);
+
+		isInteractive = true;
+		options.registerOption(INTERACTIVE_OPTION_NAME,
+				OptionType.BOOLEAN_TYPE,
+				isInteractive,
+				null,
+				INTERACTIVE_OPTION_DESCRIPTION);
+
+		useModulePdbPath = false;
+		options.registerOption(USEPDBPATH_OPTION_NAME,
+				OptionType.BOOLEAN_TYPE,
+				useModulePdbPath,
+				null,
+				USEPDBPATH_OPTION_NAME);
+	}
+	
+	@Override
+	public void optionsChanged(Options options, Program program) {
+		symbolPath = options.getString(SYMBOLPATH_OPTION_NAME, symbolPath);
+		isInteractive = options.getBoolean(INTERACTIVE_OPTION_NAME, isInteractive);
+		useModulePdbPath = options.getBoolean(USEPDBPATH_OPTION_NAME, useModulePdbPath);
 	}
 }

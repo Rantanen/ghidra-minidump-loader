@@ -30,6 +30,7 @@ class SymbolLocationDialog extends DialogComponentProvider {
 	GTable table;
 	List<SymbolInfo> allRows;
 	List<SymbolInfo> incompleteRows = new ArrayList<>();
+	boolean useModulePdbPath;
 	
 	boolean wasCancelled;
 	Worker worker = Worker.createGuiWorker();
@@ -38,10 +39,11 @@ class SymbolLocationDialog extends DialogComponentProvider {
 		"Module", "Symbols"
 	};
 
-	public SymbolLocationDialog(List<SymbolInfo> symbols) {
+	public SymbolLocationDialog(List<SymbolInfo> symbols, boolean useModulePdbPath) {
 		super("Confirm Symbols", true, false, true, true);
 		setPreferredSize(600, 300);
 
+		this.useModulePdbPath = useModulePdbPath;
 		allRows = symbols;
 		for (SymbolInfo info : symbols) {
 			if (info.result == null) {
@@ -116,9 +118,9 @@ class SymbolLocationDialog extends DialogComponentProvider {
 	public void changeSymbols(int idx) {
 		SymbolInfo row = this.incompleteRows.get(idx);
 
-		FindSymbolsFileChooser pdbChooser = new FindSymbolsFileChooser(null, row.attributes);
+		FindSymbolsFileChooser pdbChooser = new FindSymbolsFileChooser(null, row.attributes, useModulePdbPath);
 		
-		if (row.attributes != null) {
+		if (useModulePdbPath && row.attributes != null) {
 			pdbChooser.setCurrentDirectory(new File(row.attributes.getPdbFile()));
 		}
 

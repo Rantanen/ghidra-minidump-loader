@@ -7,6 +7,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import ghidra.app.util.bin.format.pdb2.pdbreader.AbstractPdb;
 import ghidra.app.util.bin.format.pdb2.pdbreader.PdbException;
@@ -47,10 +49,14 @@ class PdbResolver {
 		public AbstractPdb pdb;
 	}
 
-	public static PdbResult locatePdb(PdbProgramAttributes pdbAttributes, TaskMonitor monitor)
+	public static PdbResult locatePdb(PdbProgramAttributes pdbAttributes, String symbolServer, boolean useModulePdbPath, TaskMonitor monitor)
 			throws IOException, CancelledException, PdbException {
 
-		if (pdbAttributes.getPdbFile() != null) {
+		if (symbolServer == null || symbolServer.isEmpty()) {
+			return null;
+		}
+
+		if (useModulePdbPath && pdbAttributes.getPdbFile() != null) {
 			File candidate = new File(pdbAttributes.getPdbFile());
 			PdbResult result = validatePdbCandidate(candidate, true, pdbAttributes, monitor);
 			if (result != null) {
@@ -58,8 +64,7 @@ class PdbResolver {
 			}
 		}
 		
-		PdbResolver.SymbolPath symbolPath = PdbResolver.parseSymbolPath(
-				"srv*C:\\symbols*\\\\localhost\\NetworkSymCache*https://msdl.microsoft.com/download/symbols");
+		PdbResolver.SymbolPath symbolPath = PdbResolver.parseSymbolPath(symbolServer);
 		File symbolServerMatch = PdbResolver.loadSymbols(symbolPath, pdbAttributes);
 		if (symbolServerMatch != null) {
 			return new PdbResult(
@@ -142,6 +147,9 @@ class PdbResolver {
 		SymbolServerResult result = null;
 		String tempPath = null;
 		for (String server : servers) {
+
+			// Support home directories.
+			server = server.replaceFirst("^~\\B", Matcher.quoteReplacement(System.getProperty("user.home")));
 
 			result = loadSymbolsFromSymbolServer(server, tempPath, pdbAttributes);
 
