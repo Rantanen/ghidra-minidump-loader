@@ -30,7 +30,10 @@ import ghidra.util.filechooser.ExtensionFileFilter;
 import ghidra.util.layout.VerticalLayout;
 import ghidra.util.task.Task;
 import ghidra.util.task.TaskMonitor;
+import ghidra.util.worker.Job;
+import ghidra.util.worker.Worker;
 import net.jubjubnest.minidump.plugin.PdbResolver;
+import net.jubjubnest.minidump.plugin.PdbResolver.PdbResult;
 
 public class SymbolLocationDialog extends DialogComponentProvider {
 	
@@ -39,6 +42,7 @@ public class SymbolLocationDialog extends DialogComponentProvider {
 	List<SymbolInfo> incompleteRows = new ArrayList<>();
 	
 	boolean wasCancelled;
+	Worker worker = Worker.createGuiWorker();
 	
 	static final String[] COLUMN_NAMES = new String[] {
 		"Module", "Symbols"
@@ -81,6 +85,9 @@ public class SymbolLocationDialog extends DialogComponentProvider {
 						if (row.result != null) {
 							return row.result.file.getAbsolutePath();
 						}
+						if (row.message != null) {
+							return row.message;
+						}
 						return "Double-click to specify symbols";
 					default:
 						throw new NotYetImplementedException();
@@ -119,27 +126,54 @@ public class SymbolLocationDialog extends DialogComponentProvider {
 	public void changeSymbols(int idx) {
 		SymbolInfo row = this.incompleteRows.get(idx);
 
-		GhidraFileChooser pdbChooser = new GhidraFileChooser(null);
-		pdbChooser.setTitle("Select " + row.module.name + " PDB file");
-		pdbChooser.setApproveButtonText("Select PDB");
-		pdbChooser.setFileSelectionMode(GhidraFileChooserMode.FILES_ONLY);
-		pdbChooser.setFileFilter(new ExtensionFileFilter(new String[] { "pdb" }, "Program Database Files"));
+		FindSymbolsFileChooser pdbChooser = new FindSymbolsFileChooser(null, row.attributes);
 		
-		if (row.result != null) {
-			pdbChooser.setCurrentDirectory(row.result.file.getParentFile());
+		if (row.attributes != null) {
+			pdbChooser.setCurrentDirectory(new File(row.attributes.getPdbFile()));
 		}
 
 		File pdbFile = pdbChooser.getSelectedFile();
+		if (pdbChooser.getValidatedResult() != null) {
+			row.result = pdbChooser.getValidatedResult();
+			worker.schedule(new TryFindMissingSymbols(pdbChooser.getValidatedRoot()));
+			return;
+		}
+		
+		if (pdbFile == null) {
+			return;
+		}
+
 		executeProgressTask(new Task("Processing PDB") {
 			@Override
 			public void run(TaskMonitor monitor) throws CancelledException {
 				try {
 					row.result = PdbResolver.validatePdbCandidate(pdbFile, true, row.attributes, monitor);
-					table.repaint();
 				} catch (IOException | PdbException e) {
+					row.message = "Error: " + e.getMessage() + " (" + pdbFile.getPath() + ")";
 				}
+				table.repaint();
 			}
 		}, 0);
+	}
+	
+	class TryFindMissingSymbols extends Job {
+		
+		private File root;
+		public TryFindMissingSymbols(File root) {
+			this.root = root;
+		}
+
+		@Override
+		public void run(TaskMonitor monitor) throws CancelledException {
+			for (SymbolInfo row : incompleteRows) {
+				if (row.result != null) {
+					continue;
+				}
+
+				row.result = PdbResolver.tryFindSymbols(root, row.attributes, monitor);
+				table.repaint();
+			}
+		}
 	}
 	
 	@Override

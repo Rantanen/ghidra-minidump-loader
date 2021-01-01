@@ -5,6 +5,7 @@ import net.jubjubnest.minidump.plugin.PdbResolver.PdbResult;
 import net.jubjubnest.minidump.shared.ModuleData;
 
 class SymbolInfo {
+
 	SymbolInfo(ModuleData m, PdbProgramAttributes attributes, PdbResult result) {
 		if (m == null || attributes == null) {
 			throw new IllegalArgumentException();
@@ -20,4 +21,5 @@ class SymbolInfo {
 	ModuleData module;
 	PdbProgramAttributes attributes;
 	PdbResult result;
+	String message;
 }

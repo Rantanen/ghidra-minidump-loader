@@ -2,10 +2,11 @@ package net.jubjubnest.minidump.plugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-
-import com.google.common.io.Files;
 
 import ghidra.app.util.bin.format.pdb2.pdbreader.AbstractPdb;
 import ghidra.app.util.bin.format.pdb2.pdbreader.PdbException;
@@ -79,11 +80,11 @@ public class PdbResolver {
 		AbstractPdb pdb = PdbParser.parse(candidate.getAbsolutePath(), new PdbReaderOptions(), monitor);
 		if (verifyGuidAge) {
 			if (!pdbAttributes.getPdbGuid().equals(pdb.getGuid().toString())) {
-				return null;
+				throw new PdbException("PDB GUID mismatch");
 			}
 
 			if (!pdbAttributes.getPdbAge().equals(Integer.toHexString(pdb.getAge()))) {
-				return null;
+				throw new PdbException("PDB age mismatch");
 			}
 		}
 		
@@ -104,6 +105,32 @@ public class PdbResolver {
 				return loadSymbolsFromSymbolServers(servers, pdbAttributes);
 			default:
 				throw new NotYetImplementedException();
+			}
+		}
+		
+		return null;
+	}
+	
+	public static PdbResult tryFindSymbols(File root, PdbProgramAttributes pdbAttributes, TaskMonitor monitor) {
+
+		String candidate = pdbAttributes.getPdbFile().replace('\\', '/');
+		for (int nextDir = candidate.indexOf('/'); monitor.isCancelled() == false && nextDir != -1; nextDir = candidate.indexOf('/')) {
+			candidate = candidate.substring(nextDir + 1);
+			Path p = root.toPath().resolve(candidate);
+			if (!Files.exists(p)) {
+				continue;
+			}
+			
+			try {
+				PdbResult candidateResult = PdbResolver.validatePdbCandidate(p.toFile(), true, pdbAttributes, monitor);
+				if (candidateResult == null) {
+					continue;
+				}
+
+				return candidateResult;
+			} catch (CancelledException | IOException | PdbException e) {
+				// Ignore the candidate on errors.
+				continue;
 			}
 		}
 		
@@ -133,11 +160,11 @@ public class PdbResolver {
 		}
 		
 		for (String cascade : cascadeServers) {
-			File cascadedFile = new File(cascade, result.path);
-			if (!cascadedFile.exists()) {
-				cascadedFile.getParentFile().mkdirs();
-				Files.copy(result.file, cascadedFile);
-				result.file = cascadedFile;
+			Path cascadedFile = Paths.get(cascade, result.path);
+			if (!Files.exists(cascadedFile)) {
+				Files.createDirectories(cascadedFile.getParent());
+				Files.copy(result.file.toPath(), cascadedFile);
+				result.file = cascadedFile.toFile();
 			}
 		}
 		
