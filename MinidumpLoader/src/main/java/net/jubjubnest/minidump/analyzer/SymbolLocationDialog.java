@@ -7,35 +7,25 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 
 import javax.swing.BorderFactory;
-import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 
 import docking.DialogComponentProvider;
 import docking.DockingWindowManager;
-import docking.widgets.filechooser.GhidraFileChooser;
-import docking.widgets.filechooser.GhidraFileChooserMode;
 import docking.widgets.table.AbstractGTableModel;
 import docking.widgets.table.GTable;
-import ghidra.app.util.bin.format.pdb2.pdbreader.AbstractPdb;
 import ghidra.app.util.bin.format.pdb2.pdbreader.PdbException;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.exception.NotYetImplementedException;
-import ghidra.util.filechooser.ExtensionFileFilter;
-import ghidra.util.layout.VerticalLayout;
 import ghidra.util.task.Task;
 import ghidra.util.task.TaskMonitor;
 import ghidra.util.worker.Job;
 import ghidra.util.worker.Worker;
-import net.jubjubnest.minidump.plugin.PdbResolver;
-import net.jubjubnest.minidump.plugin.PdbResolver.PdbResult;
 
-public class SymbolLocationDialog extends DialogComponentProvider {
+class SymbolLocationDialog extends DialogComponentProvider {
 	
 	GTable table;
 	List<SymbolInfo> allRows;

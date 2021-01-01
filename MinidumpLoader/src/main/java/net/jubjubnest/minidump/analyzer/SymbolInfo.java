@@ -1,8 +1,8 @@
 package net.jubjubnest.minidump.analyzer;
 
 import ghidra.app.util.pdb.PdbProgramAttributes;
-import net.jubjubnest.minidump.plugin.PdbResolver.PdbResult;
-import net.jubjubnest.minidump.shared.ModuleData;
+import net.jubjubnest.minidump.analyzer.PdbResolver.PdbResult;
+import net.jubjubnest.minidump.data.ModuleData;
 
 class SymbolInfo {
 

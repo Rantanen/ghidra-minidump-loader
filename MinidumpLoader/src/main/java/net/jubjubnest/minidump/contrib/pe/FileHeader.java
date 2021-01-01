@@ -22,9 +22,9 @@ import java.util.List;
 
 import ghidra.app.util.bin.StructConverter;
 import ghidra.app.util.bin.format.FactoryBundledWithBinaryReader;
+import net.jubjubnest.minidump.contrib.new_.ImageLoadInfo;
 import net.jubjubnest.minidump.contrib.pe.debug.DebugCOFFSymbol;
 import net.jubjubnest.minidump.contrib.pe.debug.DebugCOFFSymbolAux;
-import net.jubjubnest.minidump.shared.ImageLoadInfo;
 import ghidra.program.model.data.*;
 import ghidra.program.model.mem.MemoryBlock;
 import ghidra.util.DataConverter;

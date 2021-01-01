@@ -32,7 +32,7 @@ import ghidra.util.DataConverter;
 import ghidra.util.Msg;
 import ghidra.util.exception.DuplicateNameException;
 import ghidra.util.task.TaskMonitor;
-import net.jubjubnest.minidump.shared.ImageLoadInfo;
+import net.jubjubnest.minidump.contrib.new_.ImageLoadInfo;
 
 // See https://docs.microsoft.com/en-us/windows/desktop/debug/pe-format
 

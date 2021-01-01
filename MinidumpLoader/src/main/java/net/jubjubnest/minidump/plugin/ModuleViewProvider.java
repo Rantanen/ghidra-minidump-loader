@@ -23,20 +23,20 @@ import ghidra.framework.model.DomainObjectListener;
 import ghidra.program.model.listing.Program;
 import ghidra.program.util.ChangeManager;
 import ghidra.program.util.CodeUnitPropertyChangeRecord;
-import net.jubjubnest.minidump.shared.ModuleData;
+import net.jubjubnest.minidump.data.ModuleData;
 import resources.Icons;
 
-public class ModulesProvider extends ComponentProvider implements DomainObjectListener {
+class ModuleViewProvider extends ComponentProvider implements DomainObjectListener {
 	
 	public static final String NAME = "Memory Dump Modules";
 	
-	private ThreadViewPlugin plugin;
+	private ModuleViewPlugin plugin;
 	private JPanel panel;
-	private ModulesList table;
+	private ModuleList table;
 	private Program program;
 	private DockingAction action;
 
-	public ModulesProvider(ThreadViewPlugin plugin, String owner) {
+	public ModuleViewProvider(ModuleViewPlugin plugin, String owner) {
 		super(plugin.getTool(), NAME, owner);
 		this.plugin = plugin;
 
@@ -47,7 +47,7 @@ public class ModulesProvider extends ComponentProvider implements DomainObjectLi
 	// Customize GUI
 	private void buildPanel() {
 
-		table = new ModulesList();
+		table = new ModuleList();
 		panel = new JPanel(new BorderLayout());
 
 		addToTool();
@@ -120,9 +120,9 @@ public class ModulesProvider extends ComponentProvider implements DomainObjectLi
 		panel.removeAll();
 		panel.add(new JScrollPane(table));
 		
-		List<ModuleState> items = new ArrayList<>();
+		List<ModuleListItem> items = new ArrayList<>();
 		for (ModuleData md : moduleData) {
-			items.add(new ModuleState(program, md));
+			items.add(new ModuleListItem(program, md));
 		}
 		this.table.setFrames(items, program);
 	}

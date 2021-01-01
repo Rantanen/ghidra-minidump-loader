@@ -1,4 +1,4 @@
-package net.jubjubnest.minidump.plugin;
+package net.jubjubnest.minidump.analyzer;
 
 import java.io.IOException;
 
@@ -9,7 +9,7 @@ import ghidra.app.util.datatype.microsoft.GuidUtil;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Program;
 
-public class ModuleParser {
+class ModuleParser {
 	public static class PdbInfo {
 		String guid;
 		int age;

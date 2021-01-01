@@ -1,4 +1,4 @@
-package net.jubjubnest.minidump.shared;
+package net.jubjubnest.minidump.analyzer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,7 +6,7 @@ import java.util.List;
 import ghidra.util.task.TaskMonitor;
 import ghidra.util.task.WrappingTaskMonitor;
 
-public class SubTaskMonitor extends WrappingTaskMonitor {
+class SubTaskMonitor extends WrappingTaskMonitor {
 	
 	private String title;
 	private String message;

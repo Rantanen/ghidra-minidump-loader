@@ -2,29 +2,21 @@ package net.jubjubnest.minidump.analyzer;
 
 import java.awt.Component;
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import docking.widgets.filechooser.GhidraFileChooser;
 import docking.widgets.filechooser.GhidraFileChooserMode;
-import ghidra.app.util.bin.format.pdb2.pdbreader.PdbException;
 import ghidra.app.util.pdb.PdbProgramAttributes;
 import ghidra.util.SystemUtilities;
-import ghidra.util.exception.CancelledException;
 import ghidra.util.filechooser.ExtensionFileFilter;
 import ghidra.util.task.TaskMonitor;
 import ghidra.util.worker.Job;
 import ghidra.util.worker.Worker;
-import net.jubjubnest.minidump.plugin.PdbResolver;
-import net.jubjubnest.minidump.plugin.PdbResolver.PdbResult;
+import net.jubjubnest.minidump.analyzer.PdbResolver.PdbResult;
 
-public class FindSymbolsFileChooser extends GhidraFileChooser {
+class FindSymbolsFileChooser extends GhidraFileChooser {
 	
 	private final PdbProgramAttributes pdbAttributes;
 	private Worker worker = Worker.createGuiWorker();
-	private CheckPdbPath currentJob;
 
 	private File rootDirectory;
 	private PdbResult result;
@@ -55,9 +47,7 @@ public class FindSymbolsFileChooser extends GhidraFileChooser {
 
 	private class CheckPdbPath extends Job {
 		
-		private boolean abort = false;
 		private File currentDirectory;
-
 		public CheckPdbPath(File currentDirectory) {
 			this.currentDirectory = currentDirectory;
 		}

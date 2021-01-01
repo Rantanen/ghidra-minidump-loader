@@ -6,15 +6,15 @@ import javax.swing.table.AbstractTableModel;
 
 import ghidra.util.exception.NotYetImplementedException;
 
-public class ModulesTableModel extends AbstractTableModel {
+class ModuleListModel extends AbstractTableModel {
 	
-	private List<ModuleState> items;
+	private List<ModuleListItem> items;
 	private String[] headers = new String[] {
 		"Name",
 		"Symbols",
 	};
 	
-	public ModulesTableModel(List<ModuleState> items) {
+	public ModuleListModel(List<ModuleListItem> items) {
 		this.items = items;
 	}
 	
@@ -35,7 +35,7 @@ public class ModulesTableModel extends AbstractTableModel {
 
 	@Override
 	public Object getValueAt(int rowIndex, int columnIndex) {
-		ModuleState item = items.get(rowIndex);
+		ModuleListItem item = items.get(rowIndex);
 		
 		switch (columnIndex) {
 		case 0:

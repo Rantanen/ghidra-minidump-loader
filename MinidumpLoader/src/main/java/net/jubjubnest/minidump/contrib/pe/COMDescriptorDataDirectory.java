@@ -26,7 +26,7 @@ import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.program.model.util.CodeUnitInsertionException;
 import ghidra.util.exception.DuplicateNameException;
 import ghidra.util.task.TaskMonitor;
-import net.jubjubnest.minidump.shared.ImageLoadInfo;
+import net.jubjubnest.minidump.contrib.new_.ImageLoadInfo;
 
 /**
  * This value has been renamed to IMAGE_DIRECTORY_ENTRY_COMHEADER.

@@ -25,8 +25,8 @@ import ghidra.program.model.mem.*;
 import ghidra.util.Conv;
 import ghidra.util.DataConverter;
 import ghidra.util.exception.DuplicateNameException;
+import net.jubjubnest.minidump.contrib.new_.ImageLoadInfo;
 import net.jubjubnest.minidump.contrib.new_.ModuleBaseOffset32DataType;
-import net.jubjubnest.minidump.shared.ImageLoadInfo;
 
 /**
  * A class to the represent the IMAGE_SECTION_HEADER

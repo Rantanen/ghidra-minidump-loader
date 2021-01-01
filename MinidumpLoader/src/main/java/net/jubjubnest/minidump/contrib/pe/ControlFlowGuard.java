@@ -15,9 +15,9 @@
  */
 package net.jubjubnest.minidump.contrib.pe;
 
+import net.jubjubnest.minidump.contrib.new_.ImageLoadInfo;
 import net.jubjubnest.minidump.contrib.new_.ModuleBaseOffset32DataType;
 import net.jubjubnest.minidump.contrib.pe.LoadConfigDirectory.GuardFlags;
-import net.jubjubnest.minidump.shared.ImageLoadInfo;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.program.model.address.*;
 import ghidra.program.model.data.DataType;

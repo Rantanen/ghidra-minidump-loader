@@ -18,8 +18,8 @@ package net.jubjubnest.minidump.contrib.pe;
 import generic.continues.GenericFactory;
 import ghidra.app.util.bin.ByteProvider;
 import ghidra.app.util.bin.format.FactoryBundledWithBinaryReader;
+import net.jubjubnest.minidump.contrib.new_.ImageLoadInfo;
 import net.jubjubnest.minidump.contrib.pe.debug.DebugDirectoryParser;
-import net.jubjubnest.minidump.shared.ImageLoadInfo;
 import ghidra.util.Conv;
 import ghidra.util.Msg;
 

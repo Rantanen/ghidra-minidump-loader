@@ -31,7 +31,7 @@ import ghidra.program.model.util.CodeUnitInsertionException;
 import ghidra.util.Msg;
 import ghidra.util.exception.DuplicateNameException;
 import ghidra.util.task.TaskMonitor;
-import net.jubjubnest.minidump.shared.ImageLoadInfo;
+import net.jubjubnest.minidump.contrib.new_.ImageLoadInfo;
 
 /**
  * Points to the delayload information. 

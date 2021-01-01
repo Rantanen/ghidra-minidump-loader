@@ -49,6 +49,7 @@ import ghidra.util.exception.DuplicateNameException;
 import ghidra.util.exception.NotEmptyException;
 import ghidra.util.exception.NotFoundException;
 import ghidra.util.task.TaskMonitor;
+import net.jubjubnest.minidump.contrib.new_.ImageLoadInfo;
 import net.jubjubnest.minidump.contrib.new_.ModuleBaseMap;
 import net.jubjubnest.minidump.contrib.opinion.PeLoader;
 import net.jubjubnest.minidump.contrib.pe.DataDirectory;
@@ -57,6 +58,9 @@ import net.jubjubnest.minidump.contrib.pe.NTHeader;
 import net.jubjubnest.minidump.contrib.pe.OptionalHeader;
 import net.jubjubnest.minidump.contrib.pe.PortableExecutable;
 import net.jubjubnest.minidump.contrib.pe.PortableExecutable.SectionLayout;
+import net.jubjubnest.minidump.data.Context64;
+import net.jubjubnest.minidump.data.ModuleData;
+import net.jubjubnest.minidump.data.ThreadData;
 import net.jubjubnest.minidump.loader.parser.MinidumpDirectory;
 import net.jubjubnest.minidump.loader.parser.MinidumpHeader;
 import net.jubjubnest.minidump.loader.parser.MinidumpLocationDescriptor;
@@ -67,10 +71,6 @@ import net.jubjubnest.minidump.loader.parser.MinidumpModule;
 import net.jubjubnest.minidump.loader.parser.MinidumpModuleList;
 import net.jubjubnest.minidump.loader.parser.ThreadInformationBlock;
 import net.jubjubnest.minidump.loader.parser.MinidumpThreadList;
-import net.jubjubnest.minidump.shared.Context64;
-import net.jubjubnest.minidump.shared.ImageLoadInfo;
-import net.jubjubnest.minidump.shared.ModuleData;
-import net.jubjubnest.minidump.shared.ThreadData;
 
 /**
  * Loads Windows Minidump files into Ghidra

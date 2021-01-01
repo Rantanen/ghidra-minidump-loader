@@ -1,4 +1,4 @@
-package net.jubjubnest.minidump.plugin;
+package net.jubjubnest.minidump.analyzer;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,7 +20,7 @@ import ghidra.util.exception.CancelledException;
 import ghidra.util.exception.NotYetImplementedException;
 import ghidra.util.task.TaskMonitor;
 
-public class PdbResolver {
+class PdbResolver {
 
 	public static PdbProgramAttributes getAttributes(Program program, Address moduleBase) throws IOException {
 

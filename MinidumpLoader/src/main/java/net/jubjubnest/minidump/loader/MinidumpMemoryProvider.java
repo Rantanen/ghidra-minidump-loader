@@ -10,7 +10,7 @@ import ghidra.app.util.bin.ByteProvider;
 import net.jubjubnest.minidump.loader.parser.MinidumpMemory64Descriptor;
 import net.jubjubnest.minidump.loader.parser.MinidumpMemory64List;
 
-public class MinidumpMemoryProvider implements ByteProvider {
+class MinidumpMemoryProvider implements ByteProvider {
 
 	public MinidumpMemoryProvider(ByteProvider provider, MinidumpMemory64List memoryList) {
 		this.provider = provider;

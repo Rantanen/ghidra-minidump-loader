@@ -19,8 +19,8 @@ import java.io.IOException;
 import java.util.*;
 
 import ghidra.app.util.bin.format.FactoryBundledWithBinaryReader;
+import net.jubjubnest.minidump.contrib.new_.ImageLoadInfo;
 import net.jubjubnest.minidump.contrib.pe.resource.*;
-import net.jubjubnest.minidump.shared.ImageLoadInfo;
 import ghidra.app.util.datatype.microsoft.*;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.framework.options.Options;

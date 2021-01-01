@@ -29,10 +29,10 @@ import ghidra.framework.model.DomainObjectListener;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Program;
 import ghidra.util.Msg;
-import net.jubjubnest.minidump.shared.ModuleData;
-import net.jubjubnest.minidump.shared.RuntimeFunction;
-import net.jubjubnest.minidump.shared.RuntimeInfo;
-import net.jubjubnest.minidump.shared.ThreadData;
+import net.jubjubnest.minidump.data.ModuleData;
+import net.jubjubnest.minidump.data.ThreadData;
+import net.jubjubnest.minidump.plugin.parser.RuntimeFunction;
+import net.jubjubnest.minidump.plugin.parser.RuntimeInfo;
 
 // TODO: If provider is desired, it is recommended to move it to its own file
 class ThreadViewProvider extends ComponentProvider implements DomainObjectListener {
@@ -131,7 +131,7 @@ class ThreadViewProvider extends ComponentProvider implements DomainObjectListen
 	}
 	
 	private void refreshStack() {
-		var frames = new ArrayList<StackFrame>();
+		var frames = new ArrayList<StackListItem>();
 		if (activeThread == null) {
 			stackList.setFrames(frames, program);
 			return;
@@ -179,7 +179,7 @@ class ThreadViewProvider extends ComponentProvider implements DomainObjectListen
 		panel.add(activePanel);
 	}
 	
-	StackFrame getCaller(Address stackPtr, Address instructionPtr, ByteBuffer buffer) throws IOException {
+	StackListItem getCaller(Address stackPtr, Address instructionPtr, ByteBuffer buffer) throws IOException {
 
 		var memoryProvider = new MemoryByteProvider(program.getMemory(), instructionPtr.getAddressSpace());
 		var data = new byte[4*3];
@@ -198,7 +198,7 @@ class ThreadViewProvider extends ComponentProvider implements DomainObjectListen
 		UnwindResult unwind = unwindStackPtr(stackPtr, instructionPtr, runtimeFunction, memoryProvider);
 		long functionOffset = instructionPtr.subtract(unwind.finalFunction.startOfFunction);
 		
-		return new StackFrame(stackPtr, instructionPtr, unwind.finalStack, functionOffset, moduleData.name);
+		return new StackListItem(stackPtr, instructionPtr, unwind.finalStack, functionOffset, moduleData.name);
 	}
 	
 	static class UnwindResult { Address finalStack; RuntimeFunction finalFunction; }

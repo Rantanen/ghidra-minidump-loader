@@ -19,10 +19,10 @@ import ghidra.app.util.opinion.*;
 import java.util.*;
 
 import ghidra.app.util.bin.format.pdb.*;
+import net.jubjubnest.minidump.contrib.new_.ImageLoadInfo;
 import net.jubjubnest.minidump.contrib.pe.FileHeader;
 import net.jubjubnest.minidump.contrib.pe.SectionHeader;
 import net.jubjubnest.minidump.contrib.pe.debug.*;
-import net.jubjubnest.minidump.shared.ImageLoadInfo;
 import ghidra.app.util.datatype.microsoft.GUID;
 import ghidra.app.util.demangler.DemangledObject;
 import ghidra.app.util.demangler.DemanglerUtil;

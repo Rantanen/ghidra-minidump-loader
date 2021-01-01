@@ -5,22 +5,22 @@ import java.util.List;
 import docking.widgets.table.GTable;
 import ghidra.program.model.listing.Program;
 
-public class ModulesList extends GTable {
+class ModuleList extends GTable {
 	
-	private List<ModuleState> items;
-	private ModulesTableModel model;
+	private List<ModuleListItem> items;
+	private ModuleListModel model;
 	
-	public ModulesList() {
+	public ModuleList() {
 	}
 	
-	public void setFrames(List<ModuleState> items, Program program) {
+	public void setFrames(List<ModuleListItem> items, Program program) {
 
 		this.items = items;
-		model = new ModulesTableModel(items);
+		model = new ModuleListModel(items);
 		this.setModel(model);
 	}
 	
-	public ModuleState getModule(int idx) {
+	public ModuleListItem getModule(int idx) {
 		return items.get(idx);
 	}
 

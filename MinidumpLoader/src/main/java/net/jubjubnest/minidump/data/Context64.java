@@ -1,13 +1,10 @@
-package net.jubjubnest.minidump.shared;
+package net.jubjubnest.minidump.data;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import ghidra.app.util.bin.ByteProvider;
-import ghidra.framework.plugintool.PluginTool;
-import ghidra.program.model.listing.Program;
-import net.jubjubnest.minidump.plugin.SetRegistersCmdBuilder;
 
 /**
  * 64-bit CPU context
@@ -108,33 +105,6 @@ public class Context64 implements ThreadContext {
 		buffer.putLong(lastExceptionFromRip);
 
 		return buffer.array();
-	}
-
-	@Override
-	public void apply(Program program, PluginTool tool) {
-		SetRegistersCmdBuilder builder = new SetRegistersCmdBuilder(program, program.getImageBase().getNewAddress(rip));
-
-		builder.setRegister("RAX", rax);
-		builder.setRegister("RCX", rcx);
-		builder.setRegister("RDX", rdx);
-		builder.setRegister("RBX", rbx);
-		builder.setRegister("RSP", rsp);
-		builder.setRegister("RBP", rbp);
-		builder.setRegister("RSI", rsi);
-		
-		builder.setRegister("RDI", rdi);
-		builder.setRegister("R8", r8);
-		builder.setRegister("R9", r9);
-		builder.setRegister("R10", r10);
-		builder.setRegister("R11", r11);
-		builder.setRegister("R12", r12);
-		builder.setRegister("R13", r13);
-		builder.setRegister("R14", r14);
-		builder.setRegister("R15", r15);
-
-		builder.setRegister("RIP", rip);
-		
-		tool.execute(builder.getCommand(), program);
 	}
 
 	public static Context64 parse(ByteBuffer byteBuffer) {

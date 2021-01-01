@@ -25,8 +25,8 @@ import ghidra.program.model.data.*;
 import ghidra.util.Conv;
 import ghidra.util.Msg;
 import ghidra.util.exception.DuplicateNameException;
+import net.jubjubnest.minidump.contrib.new_.ImageLoadInfo;
 import net.jubjubnest.minidump.contrib.new_.ModuleBaseOffset32DataType;
-import net.jubjubnest.minidump.shared.ImageLoadInfo;
 
 /**
  * A class to represent the 

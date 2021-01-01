@@ -22,7 +22,7 @@ import ghidra.app.util.bin.StructConverter;
 import ghidra.program.model.listing.Program;
 import ghidra.util.DataConverter;
 import ghidra.util.task.TaskMonitor;
-import net.jubjubnest.minidump.shared.ImageLoadInfo;
+import net.jubjubnest.minidump.contrib.new_.ImageLoadInfo;
 
 public interface OptionalHeader extends StructConverter {
 	/**

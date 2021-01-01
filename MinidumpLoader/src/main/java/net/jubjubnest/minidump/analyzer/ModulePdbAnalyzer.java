@@ -1,15 +1,9 @@
 package net.jubjubnest.minidump.analyzer;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 
-import docking.widgets.filechooser.GhidraFileChooser;
-import docking.widgets.filechooser.GhidraFileChooserMode;
 import ghidra.app.services.AbstractAnalyzer;
 import ghidra.app.services.AnalysisPriority;
 import ghidra.app.services.AnalyzerType;
@@ -24,13 +18,9 @@ import ghidra.program.model.address.AddressSetView;
 import ghidra.program.model.listing.Program;
 import ghidra.util.SystemUtilities;
 import ghidra.util.exception.CancelledException;
-import ghidra.util.filechooser.ExtensionFileFilter;
 import ghidra.util.task.TaskMonitor;
+import net.jubjubnest.minidump.data.ModuleData;
 import net.jubjubnest.minidump.loader.MinidumpLoader;
-import net.jubjubnest.minidump.plugin.PdbResolver;
-import net.jubjubnest.minidump.plugin.PdbResolver.PdbResult;
-import net.jubjubnest.minidump.shared.ModuleData;
-import net.jubjubnest.minidump.shared.SubTaskMonitor;
 
 public class ModulePdbAnalyzer extends AbstractAnalyzer {
 	

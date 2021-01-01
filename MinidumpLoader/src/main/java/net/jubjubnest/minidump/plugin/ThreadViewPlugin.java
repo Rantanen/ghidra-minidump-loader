@@ -15,7 +15,6 @@
  */
 package net.jubjubnest.minidump.plugin;
 
-import ghidra.app.ExamplesPluginPackage;
 import ghidra.app.events.ProgramActivatedPluginEvent;
 import ghidra.app.plugin.PluginCategoryNames;
 import ghidra.app.plugin.ProgramPlugin;
@@ -24,22 +23,18 @@ import ghidra.framework.plugintool.*;
 import ghidra.framework.plugintool.util.PluginStatus;
 import ghidra.program.model.listing.Program;
 
-/**
- * TODO: Provide class-level documentation that describes what this plugin does.
- */
 //@formatter:off
 @PluginInfo(
 	status = PluginStatus.STABLE,
-	packageName = ExamplesPluginPackage.NAME,
-	category = PluginCategoryNames.EXAMPLES,
-	shortDescription = "Plugin short description goes here.",
-	description = "Plugin long description goes here."
+	packageName = MinidumpPluginPackage.NAME,
+	category = PluginCategoryNames.NAVIGATION,
+	shortDescription = "Displays Minidump Thread information.",
+	description = "Lists Thread information contained in the Minidump and resolves the call stacks for each thread."
 )
 //@formatter:on
 public class ThreadViewPlugin extends ProgramPlugin {
 
 	ThreadViewProvider threadsProvider;
-	ModulesProvider modulesProvider;
 	GoToService goToService;
 	Program program;
 
@@ -49,10 +44,8 @@ public class ThreadViewPlugin extends ProgramPlugin {
 	 * @param tool The plugin tool that this plugin is added to.
 	 */
 	public ThreadViewPlugin(PluginTool tool) {
-		super(tool, true, true);
-
+		super(tool, false, false);
 		threadsProvider = new ThreadViewProvider(this, getName());
-		modulesProvider = new ModulesProvider(this, getName());
 	}
 
 	@Override
@@ -69,7 +62,6 @@ public class ThreadViewPlugin extends ProgramPlugin {
 			var ev = (ProgramActivatedPluginEvent)event;
 			program = ev.getActiveProgram();
 			threadsProvider.programActivated(program);
-			modulesProvider.programActivated(program);
 		}
 	}
 }

@@ -1,4 +1,4 @@
-package net.jubjubnest.minidump.shared;
+package net.jubjubnest.minidump.data;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,4 +1,4 @@
-package net.jubjubnest.minidump.shared;
+package net.jubjubnest.minidump.plugin.parser;
 
 import java.io.IOException;
 import java.util.ArrayList;

@@ -8,7 +8,7 @@ import javax.swing.table.AbstractTableModel;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Program;
 
-class StackTableModel extends AbstractTableModel {
+class StackListModel extends AbstractTableModel {
 	
 	private static final String[] HEADERS = new String[] {
 		"Stack Frame",
@@ -18,14 +18,14 @@ class StackTableModel extends AbstractTableModel {
 	};
 	
 	static class Item {
-		StackFrame frame;
+		StackListItem frame;
 		String function;
 	}
 	private List<Item> items;
 
-	public StackTableModel(List<StackFrame> frames, Program program) {
+	public StackListModel(List<StackListItem> frames, Program program) {
 		items = new ArrayList<>(frames.size());
-		for (StackFrame f : frames) {
+		for (StackListItem f : frames) {
 			Item item = new Item();
 			item.frame = f;
 			items.add(item);
@@ -80,7 +80,7 @@ class StackTableModel extends AbstractTableModel {
 	public Object getValueAt(int rowIndex, int columnIndex) {
 
 		Item item = items.get(rowIndex);
-		StackFrame frame = item.frame;
+		StackListItem frame = item.frame;
 
 		switch (columnIndex) {
 		case 0:

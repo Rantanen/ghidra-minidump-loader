@@ -9,11 +9,11 @@ import javax.swing.table.TableColumnModel;
 import docking.widgets.table.GTable;
 import ghidra.program.model.listing.Program;
 
-public class StackList extends GTable {
+class StackList extends GTable {
 	
 	private ThreadViewPlugin plugin;
-	private List<StackFrame> frames;
-	private StackTableModel model;
+	private List<StackListItem> frames;
+	private StackListModel model;
 	
 	public StackList(ThreadViewPlugin plugin) {
 		this.plugin = plugin;
@@ -29,10 +29,10 @@ public class StackList extends GTable {
 		});
 	}
 	
-	public void setFrames(List<StackFrame> frames, Program program) {
+	public void setFrames(List<StackListItem> frames, Program program) {
 
 		this.frames = frames;
-		model = new StackTableModel(frames, program);
+		model = new StackListModel(frames, program);
 		this.setModel(model);
 		TableColumnModel columns = getColumnModel();
 		columns.getColumn(0).setPreferredWidth(100);

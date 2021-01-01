@@ -1,4 +1,4 @@
-package net.jubjubnest.minidump.shared;
+package net.jubjubnest.minidump.contrib.new_;
 
 import ghidra.framework.options.Options;
 import ghidra.program.model.listing.Program;

@@ -25,7 +25,7 @@ import ghidra.app.util.bin.format.mz.DOSHeader;
 import ghidra.util.DataConverter;
 import ghidra.util.Msg;
 import ghidra.util.exception.NotYetImplementedException;
-import net.jubjubnest.minidump.shared.ImageLoadInfo;
+import net.jubjubnest.minidump.contrib.new_.ImageLoadInfo;
 
 /**
  * A class to manage loading Portable Executables (PE).

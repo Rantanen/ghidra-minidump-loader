@@ -7,14 +7,14 @@ import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.MemoryAccessException;
 
-class StackFrame {
+class StackListItem {
 	Address stackPointer;
 	Address instructionPointer;
 	Address returnPointer;
 	long functionOffset;
 	String module;
 	
-	public StackFrame(
+	public StackListItem(
 			Address stackPointer,
 			Address instructionPointer,
 			Address returnPointer,

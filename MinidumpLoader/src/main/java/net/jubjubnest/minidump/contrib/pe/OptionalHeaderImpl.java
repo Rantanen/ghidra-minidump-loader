@@ -19,9 +19,9 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 
 import ghidra.app.util.bin.format.FactoryBundledWithBinaryReader;
+import net.jubjubnest.minidump.contrib.new_.ImageLoadInfo;
 import net.jubjubnest.minidump.contrib.new_.ModuleBaseOffset32DataType;
 import net.jubjubnest.minidump.contrib.pe.ImageCor20Header.ImageCor20Flags;
-import net.jubjubnest.minidump.shared.ImageLoadInfo;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressOutOfBoundsException;
 import ghidra.program.model.data.*;
