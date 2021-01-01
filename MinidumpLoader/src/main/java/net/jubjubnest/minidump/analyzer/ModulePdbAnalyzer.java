@@ -34,7 +34,7 @@ import net.jubjubnest.minidump.shared.SubTaskMonitor;
 
 public class ModulePdbAnalyzer extends AbstractAnalyzer {
 	
-	public final static String NAME = "Module PDB Analyzer";
+	public final static String NAME = "Module PDB Loader";
 	public final static String DESCRIPTION = "Attempts to locate and apply PDBs for individual modules in a Minidump.";
 	static final boolean DEFAULT_ENABLEMENT = true;
 	
