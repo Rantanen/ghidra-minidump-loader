@@ -208,7 +208,7 @@ class ThreadViewProvider extends ComponentProvider implements DomainObjectListen
 		RuntimeFunction finalFunction = rtFunction;
 		while (runtimeInfo != null) {
 
-			var functionOffset = instructionPtr.subtract(rtFunction.startOfFunction);
+			var functionOffset = instructionPtr.subtract(finalFunction.startOfFunction);
 			for (var unwindCode : runtimeInfo.unwindCodes ) {
 				if (unwindCode.prologOffset <= functionOffset) {
 					current = current.add(unwindCode.spEffect);
