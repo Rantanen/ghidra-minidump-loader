@@ -48,7 +48,7 @@ abstract class AbstractModuleBaseOffsetDataType extends BuiltIn {
 	}
 	
 	@Override
-	public boolean isDynamicallySized() {
+	public boolean hasLanguageDependantLength() {
 		return false;
 	}
 	

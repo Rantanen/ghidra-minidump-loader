@@ -17,9 +17,8 @@ package net.jubjubnest.minidump.contrib.pe.debug;
 
 import ghidra.app.util.bin.StructConverter;
 import ghidra.app.util.bin.format.FactoryBundledWithBinaryReader;
-import ghidra.app.util.bin.format.pdb.PdbFactory;
-import ghidra.app.util.bin.format.pdb.PdbInfoDotNetIface;
-import ghidra.app.util.bin.format.pdb.PdbInfoIface;
+import ghidra.app.util.bin.format.pdb.PdbInfoCodeView;
+import ghidra.app.util.bin.format.pdb.PdbInfoDotNet;
 import net.jubjubnest.minidump.contrib.pe.OffsetValidator;
 import net.jubjubnest.minidump.contrib.pe.PortableExecutable.SectionLayout;
 import ghidra.program.model.data.ArrayDataType;
@@ -38,8 +37,8 @@ import java.io.IOException;
 public class DebugCodeView implements StructConverter {
 	private DebugDirectory debugDir;
 	private DebugCodeViewSymbolTable symbolTable;
-	private PdbInfoIface pdbInfo;
-	private PdbInfoDotNetIface dotNetPdbInfo;
+	private PdbInfoCodeView pdbInfo;
+	private PdbInfoDotNet dotNetPdbInfo;
 
 	/**
 	 * Constructor.
@@ -74,8 +73,8 @@ public class DebugCodeView implements StructConverter {
 			return;
 		}
 
-		dotNetPdbInfo = PdbFactory.getPdbInfoDotNetInstance(reader, ptr);
-		pdbInfo = PdbFactory.getPdbInfoInstance(reader, ptr);
+		dotNetPdbInfo = PdbInfoDotNet.isMatch(reader, ptr) ? PdbInfoDotNet.read(reader, ptr) : null;
+		pdbInfo = PdbInfoCodeView.isMatch(reader, ptr) ? PdbInfoCodeView.read(reader, ptr) : null;
 		if (DebugCodeViewSymbolTable.isMatch(reader, ptr)) {
 			symbolTable =
 				DebugCodeViewSymbolTable.createDebugCodeViewSymbolTable(reader,
@@ -110,11 +109,11 @@ public class DebugCodeView implements StructConverter {
 	 * Returns the code view .PDB info.
 	 * @return the code view .PDB info
 	 */
-	public PdbInfoIface getPdbInfo() {
+	public PdbInfoCodeView getPdbInfo() {
 		return pdbInfo;
 	}
 
-	public PdbInfoDotNetIface getDotNetPdbInfo() {
+	public PdbInfoDotNet getDotNetPdbInfo() {
 		return dotNetPdbInfo;
 	}
 

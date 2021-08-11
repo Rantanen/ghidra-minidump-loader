@@ -35,7 +35,7 @@ class MSRichProductBuildNumberDataType extends DataTypeImpl {
 	}
 
 	@Override
-	public boolean isDynamicallySized() {
+	public boolean hasLanguageDependantLength() {
 		return false;
 	}
 
