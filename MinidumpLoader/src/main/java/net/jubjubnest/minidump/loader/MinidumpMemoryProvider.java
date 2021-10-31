@@ -6,10 +6,22 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 
+import org.bouncycastle.util.Arrays;
+
 import ghidra.app.util.bin.ByteProvider;
 import net.jubjubnest.minidump.loader.parser.MinidumpMemory64Descriptor;
 import net.jubjubnest.minidump.loader.parser.MinidumpMemory64List;
 
+
+/**
+ * Byte provider that allows reading minidumps as virtual memory.
+ *
+ * The provider assumes the memory is infinite and uninitialized with zeros.
+ * This allows other components to read memory as if it was contiguous even if
+ * the minidump itself is missing certain memory pages.
+ * 
+ * Note that APIs such as 'length()' still return the total memory size.
+ */
 class MinidumpMemoryProvider implements ByteProvider {
 
 	public MinidumpMemoryProvider(ByteProvider provider, MinidumpMemory64List memoryList) {
@@ -88,6 +100,8 @@ class MinidumpMemoryProvider implements ByteProvider {
 	private int fillBuffer(byte[] buffer, int dstOffset, long offset, int length) throws IOException {
 		length = Integer.min(length, buffer.length);
 
+		// Find the segment.
+		// The binary search will find the segment the start of which is at the given start or the last one before it.
 		int idx = Collections.binarySearch(this.segmentStarts, offset);
 		if (idx < 0)
 			idx = -idx - 1;
@@ -96,16 +110,34 @@ class MinidumpMemoryProvider implements ByteProvider {
 		idx -= 1;
 		var segment = this.segments.get(idx);
 
+		// Check whether the found segment has bytes available for the given range.
 		var segmentOffset = offset - segment.baseAddress;
 		var segmentAvailable = segment.segmentSize - segmentOffset;
-		if (segmentAvailable <= 0)
-			return -1;
-
-		var write = (int) Long.min(segmentAvailable, length);
-
-		var chunk = this.provider.readBytes(segment.dataOffset + segmentOffset, write);
-		System.arraycopy(chunk, 0, buffer, dstOffset, write);
-		return write;
+		if (segmentAvailable > 0)
+		{
+			// Bytes available. We should try to write as much as asked, but cap at the amount of bytes available.
+			var bytesToWrite = (int) Long.min(segmentAvailable, length);
+			var chunk = this.provider.readBytes(segment.dataOffset + segmentOffset, bytesToWrite);
+			System.arraycopy(chunk, 0, buffer, dstOffset, bytesToWrite);
+			return bytesToWrite;
+		}
+		else if( idx + 1 < this.segments.size() )
+		{
+			// No bytes available, but a next segment exists.
+			// We'll assume the bytes from this segment to the next are 0.
+			var nextSegment = this.segments.get(idx + 1);
+			var bytesToNextSegment = nextSegment.baseAddress - offset;
+			var bytesToWrite = (int) Long.min(bytesToNextSegment, length);
+			Arrays.fill(buffer, 0, bytesToWrite, (byte)0);
+			return bytesToWrite;
+		}
+		else
+		{
+			// No further segments.
+			// Just keep returning zero bytes.
+			Arrays.fill(buffer, 0, length, (byte)0);
+			return length;
+		}
 	}
 
 	@Override
