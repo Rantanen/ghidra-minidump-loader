@@ -180,12 +180,7 @@ class PdbResolver {
 	}
 
 	private static SymbolServerResult loadSymbolsFromSymbolServer(String server, String tempPath, PdbProgramAttributes pdbAttributes) throws IOException {
-
-		for (String candidate : pdbAttributes.getPotentialPdbFilenames()) {
-			return loadSymbolsFromSymbolServerForCandidate(server, candidate, tempPath, pdbAttributes);
-		}
-		
-		return null;
+		return loadSymbolsFromSymbolServerForCandidate(server, pdbAttributes.getPdbFile(), tempPath, pdbAttributes);
 	}
 	
 	private static SymbolServerResult loadSymbolsFromSymbolServerForCandidate(String server, String candidate, String tempPath, PdbProgramAttributes pdbAttributes) throws IOException {
@@ -193,8 +188,9 @@ class PdbResolver {
 		if (!server.endsWith("/")) {
 			server += "/";
 		}
-		String path = candidate + "/" + pdbAttributes.getGuidAgeCombo() + "/" + candidate;
 		
+		String path = candidate + "/" + pdbAttributes.getPdbGuid() + pdbAttributes.getPdbAge() + "/" + candidate;
+
 		if (server.startsWith("http:") || server.startsWith("https:")) {
 			return downloadFile(server, path, tempPath);
 		}
