@@ -10,7 +10,6 @@ import ghidra.app.services.AnalyzerType;
 import ghidra.app.util.bin.format.pdb2.pdbreader.PdbException;
 import ghidra.app.util.bin.format.pdb2.pdbreader.PdbReaderOptions;
 import ghidra.app.util.importer.MessageLog;
-import ghidra.app.util.pdb.PdbLocator;
 import ghidra.app.util.pdb.PdbProgramAttributes;
 import ghidra.app.util.pdb.pdbapplicator.PdbApplicator;
 import ghidra.app.util.pdb.pdbapplicator.PdbApplicatorOptions;
